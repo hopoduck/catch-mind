@@ -2,7 +2,8 @@ import { Input } from "@nextui-org/react";
 import { KeyboardEventHandler, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import ChatLog from "../components/Chatlog";
+import Canvas from "../components/Canvas";
+import ChatLog from "../components/ChatLog";
 import { useInput } from "../hooks/useInput";
 import Socket from "../socket/Socket";
 
@@ -65,8 +66,11 @@ export default function Home() {
   }, []);
 
   return (
-    <div>
-      <div className="p-4">
+    <div className="flex flex-col gap-4 p-4">
+      <div>
+        <Canvas />
+      </div>
+      <div>
         <ChatLog list={chatLog} className="rounded-xl p-3" />
         <Input
           {...htmlAttribute}
