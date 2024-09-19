@@ -5,3 +5,9 @@ declare module 'socket.io' {
     nickname: string;
   }
 }
+
+interface CatchMindUser {
+  id: string;
+  points: number;
+  nickname: string;
+}

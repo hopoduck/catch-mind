@@ -20,13 +20,14 @@ export default function Login() {
   };
 
   return (
-    <div className="mx-auto my-0 flex h-full w-96 flex-col items-center justify-center gap-4">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-4">
       <Input
         {...htmlAttribute}
+        className="w-96"
         placeholder="Nickname"
         onKeyDown={handleKeydown}
       />
-      <Button className="w-full" onClick={handleSubmit}>
+      <Button className="w-96" onClick={handleSubmit}>
         Submit
       </Button>
     </div>

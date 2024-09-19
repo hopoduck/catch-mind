@@ -1,9 +1,11 @@
-import { Input } from "@nextui-org/react";
+import { Icon } from "@iconify-icon/react/dist/iconify.mjs";
+import { Button, Input } from "@nextui-org/react";
 import { KeyboardEventHandler, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Canvas from "../components/Canvas";
 import ChatLog from "../components/ChatLog";
+import LeaderBoard from "../components/Leaderboard";
 import { useInput } from "../hooks/useInput";
 import Socket from "../socket/Socket";
 
@@ -16,9 +18,10 @@ export default function Home() {
     }
   }, [navigate]);
 
+  const { value, setValue, htmlAttribute } = useInput();
   const [chatLog, setChatLog] = useState<ChatData[]>([]);
   const [socket, setSocket] = useState<Socket>();
-  const { value, setValue, htmlAttribute } = useInput();
+  const [players, setPlayers] = useState<Player[]>([]);
 
   const addChatData = (data: ChatData) => {
     setChatLog((chatLog) => [...chatLog, data]);
@@ -43,31 +46,49 @@ export default function Home() {
       sessionStorage.getItem("nickname") ?? "Anonymous",
     );
 
-    socket.setHandleNewUser(({ nickname }) => {
-      toast.success(`${nickname}님이 접속하였습니다.`);
-    });
-    socket.setHandleDisconnected(({ nickname }) => {
-      toast.error(`${nickname}님이 퇴장하였습니다.`);
-    });
-    socket.setHandleNewMessage(({ message, nickname }) => {
-      console.log("new message received", message);
-      addChatData({
-        id: crypto.randomUUID(),
-        message,
-        nickname,
-      });
-    });
+    const cleanUps = [
+      socket.setHandleNewUser(({ nickname }) => {
+        toast.success(`${nickname}님이 접속하였습니다.`);
+      }),
+      socket.setHandleDisconnected(({ nickname }) => {
+        toast.error(`${nickname}님이 퇴장하였습니다.`);
+      }),
+      socket.setHandleNewMessage(({ message, nickname }) => {
+        console.log("new message received", message);
+        addChatData({
+          id: crypto.randomUUID(),
+          message,
+          nickname,
+        });
+      }),
+      socket.setHandlePlayerUpdate(({ players }) => {
+        setPlayers(players);
+      }),
+    ];
 
     setSocket(socket);
 
     return () => {
       socket.disconnect();
+      cleanUps.forEach((cleanUp) => cleanUp());
     };
   }, []);
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <Canvas />
+      <Button
+        className="flex gap-1"
+        color="danger"
+        onClick={() => {
+          sessionStorage.removeItem("nickname");
+          navigate("/login");
+        }}
+      >
+        <Icon icon="solar:exit-bold-duotone" />
+        Exit
+      </Button>
+      {socket && <Canvas socket={socket} />}
+      <LeaderBoard players={players} />
       <ChatLog list={chatLog} className="rounded-xl p-3" />
       <Input
         {...htmlAttribute}

@@ -12,7 +12,7 @@ export default function CenterLayout({
 
   return (
     <NextUIProvider navigate={navigate}>
-      <div className="min-w-screen min-h-screen bg-slate-200">
+      <div className="h-screen w-screen overflow-auto bg-slate-200">
         <Toaster />
         {children ?? <Outlet />}
       </div>
