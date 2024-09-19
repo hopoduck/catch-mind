@@ -1,6 +1,12 @@
 import { Icon } from "@iconify-icon/react";
 import { Button, ButtonGroup, Slider } from "@nextui-org/react";
-import { MouseEventHandler, useEffect, useRef, useState } from "react";
+import {
+  MouseEventHandler,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useInputNumber } from "../hooks/useInput";
 
 const colors = [
@@ -17,7 +23,7 @@ const colors = [
   color,
 }));
 
-enum Variant {
+enum Action {
   draw = "draw",
   fill = "fill",
   erase = "erase",
@@ -25,11 +31,73 @@ enum Variant {
 
 export default function Canvas() {
   const canvas = useRef<HTMLCanvasElement>(null);
-  const [context, setContext] = useState<CanvasRenderingContext2D>();
   const { value, htmlAttribute } = useInputNumber(1);
-  const [action, setAction] = useState<Variant>(Variant.draw);
+  const [context, setContext] = useState<CanvasRenderingContext2D>();
+  const [action, setAction] = useState<Action>(Action.draw);
   const [colorData, setColorData] = useState<(typeof colors)[0]>(colors[0]);
   const [isDrawing, setIsDrawing] = useState(false);
+
+  const handleMouseDown: MouseEventHandler<HTMLElement> = (e) => {
+    if (!context) return;
+    if (!canvas.current) return;
+
+    e.preventDefault();
+    context.beginPath();
+    context.lineWidth = value;
+    switch (action) {
+      case Action.fill:
+        context.fillStyle = colorData.color;
+        context.fillRect(0, 0, canvas.current.width, canvas.current.height);
+        return;
+      case Action.erase:
+        setIsDrawing(true);
+        context.fillStyle = "#ffffff";
+        context.strokeStyle = "#ffffff";
+        break;
+      case Action.draw:
+        setIsDrawing(true);
+        context.fillStyle = colorData.color;
+        context.strokeStyle = colorData.color;
+        break;
+    }
+
+    context.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+  };
+
+  const handleMouseUp = useCallback(() => {
+    if (!context) return;
+    if (!isDrawing) return;
+
+    setIsDrawing(false);
+  }, [context, isDrawing]);
+
+  const handleMouseMove: MouseEventHandler<HTMLElement> = (e) => {
+    if (!context) return;
+    if (!isDrawing) return;
+
+    e.preventDefault();
+    context.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+    context.stroke();
+  };
+
+  const handleColorChange = (data: (typeof colors)[0]) => {
+    if (!context) return;
+
+    if (action === Action.erase) {
+      setAction(Action.draw);
+    }
+    setColorData(data);
+  };
+
+  const handleClear = () => {
+    if (!context) return;
+    if (!canvas.current) return;
+
+    context.beginPath();
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.current.width, canvas.current.height);
+    context.fill();
+  };
 
   useEffect(() => {
     if (!canvas.current) return;
@@ -46,79 +114,24 @@ export default function Canvas() {
     };
   }, [canvas]);
 
-  const handleMouseDown: MouseEventHandler<HTMLCanvasElement> = (e) => {
-    if (!context) return;
-    if (!canvas.current) return;
-
-    context.beginPath();
-    context.lineWidth = value;
-    switch (action) {
-      case Variant.fill:
-        context.fillStyle = colorData.color;
-        context.fillRect(0, 0, canvas.current.width, canvas.current.height);
-        return;
-      case Variant.erase:
-        setIsDrawing(true);
-        context.fillStyle = "#ffffff";
-        context.strokeStyle = "#ffffff";
-        break;
-      case Variant.draw:
-        setIsDrawing(true);
-        context.fillStyle = colorData.color;
-        context.strokeStyle = colorData.color;
-        break;
-    }
-
-    context.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-  };
-
-  const handleMouseUp: MouseEventHandler<HTMLCanvasElement> = () => {
-    if (!context) return;
-    if (!isDrawing) return;
-
-    setIsDrawing(false);
-  };
-
-  const handleMouseMove: MouseEventHandler<HTMLCanvasElement> = (e) => {
-    if (!context) return;
-    if (!isDrawing) return;
-
-    context.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-    context.stroke();
-  };
-
-  const handleColorChange = (data: (typeof colors)[0]) => {
-    if (!context) return;
-
-    if (action === Variant.erase) {
-      setAction(Variant.draw);
-    }
-    setColorData(data);
-  };
-
-  const handleClear = () => {
-    if (!context) return;
-    if (!canvas.current) return;
-
-    context.beginPath();
-    context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, canvas.current.width, canvas.current.height);
-    context.fill();
-  };
+  useEffect(() => {
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [handleMouseUp]);
 
   return (
-    <div className="flex h-full w-full items-center justify-center">
+    <div className="flex h-full w-full flex-row items-center justify-center gap-4 max-lg:flex-col">
       <canvas
         width={600}
         height={600}
         className="rounded-2xl border-2 border-sky-300 bg-white shadow"
         ref={canvas}
         onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseUp}
-      ></canvas>
-      <div className="flex flex-col gap-4 p-4">
+      />
+      <div className="flex flex-col gap-4">
         <Slider
           {...htmlAttribute}
           label="펜 굵기"
@@ -147,20 +160,20 @@ export default function Canvas() {
         <div className="flex justify-between">
           <ButtonGroup>
             <Button
-              color={action === Variant.draw ? "primary" : "default"}
-              onClick={() => setAction(Variant.draw)}
+              color={action === Action.draw ? "primary" : "default"}
+              onClick={() => setAction(Action.draw)}
             >
               Draw
             </Button>
             <Button
-              color={action === Variant.fill ? "primary" : "default"}
-              onClick={() => setAction(Variant.fill)}
+              color={action === Action.fill ? "primary" : "default"}
+              onClick={() => setAction(Action.fill)}
             >
               Fill
             </Button>
             <Button
-              color={action === Variant.erase ? "primary" : "default"}
-              onClick={() => setAction(Variant.erase)}
+              color={action === Action.erase ? "primary" : "default"}
+              onClick={() => setAction(Action.erase)}
             >
               Erase
             </Button>

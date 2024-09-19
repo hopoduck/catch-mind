@@ -67,18 +67,13 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <div>
-        <Canvas />
-      </div>
-      <div>
-        <ChatLog list={chatLog} className="rounded-xl p-3" />
-        <Input
-          {...htmlAttribute}
-          className="mt-4"
-          placeholder="메시지를 입력..."
-          onKeyDown={handleKeydown}
-        />
-      </div>
+      <Canvas />
+      <ChatLog list={chatLog} className="rounded-xl p-3" />
+      <Input
+        {...htmlAttribute}
+        placeholder="메시지를 입력..."
+        onKeyDown={handleKeydown}
+      />
     </div>
   );
 }
