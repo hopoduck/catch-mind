@@ -30,7 +30,13 @@ enum Action {
   erase = "erase",
 }
 
-export default function Canvas({ socket }: { readonly socket: Socket }) {
+export default function Canvas({
+  socket,
+  readonly,
+}: {
+  readonly socket: Socket;
+  readonly readonly: boolean;
+}) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const { value, htmlAttribute } = useInputNumber(1);
   const [context, setContext] = useState<CanvasRenderingContext2D>();
@@ -41,6 +47,7 @@ export default function Canvas({ socket }: { readonly socket: Socket }) {
   const handleMouseDown: MouseEventHandler<HTMLElement> = (e) => {
     if (!context) return;
     if (!canvas.current) return;
+    if (readonly) return;
 
     e.preventDefault();
     context.beginPath();
@@ -73,13 +80,15 @@ export default function Canvas({ socket }: { readonly socket: Socket }) {
   const handleMouseUp = useCallback(() => {
     if (!context) return;
     if (!isDrawing) return;
+    if (readonly) return;
 
     setIsDrawing(false);
-  }, [context, isDrawing]);
+  }, [context, isDrawing, readonly]);
 
   const handleMouseMove: MouseEventHandler<HTMLElement> = (e) => {
     if (!context) return;
     if (!isDrawing) return;
+    if (readonly) return;
 
     e.preventDefault();
     context.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
@@ -99,6 +108,7 @@ export default function Canvas({ socket }: { readonly socket: Socket }) {
 
   const handleColorChange = (data: (typeof colors)[0]) => {
     if (!context) return;
+    if (readonly) return;
 
     if (action === Action.erase) {
       setAction(Action.draw);
@@ -109,6 +119,7 @@ export default function Canvas({ socket }: { readonly socket: Socket }) {
   const handleClear = () => {
     if (!context) return;
     if (!canvas.current) return;
+    if (readonly) return;
 
     context.beginPath();
     context.fillStyle = "#ffffff";
@@ -134,11 +145,11 @@ export default function Canvas({ socket }: { readonly socket: Socket }) {
 
   useEffect(() => {
     const cleanUps = [
-      socket.setHandleBeganPath(({ x, y }) => {
+      socket.addHandleBeganPath(({ x, y }) => {
         context?.beginPath();
         context?.moveTo(x, y);
       }),
-      socket.setHandleStrokedPath(({ x, y, style }) => {
+      socket.addHandleStrokedPath(({ x, y, style }) => {
         if (!context) return;
 
         context.strokeStyle = style.color;
@@ -146,11 +157,21 @@ export default function Canvas({ socket }: { readonly socket: Socket }) {
         context.lineTo(x, y);
         context.stroke();
       }),
-      socket.setHandleFilled(({ color }) => {
+      socket.addHandleFilled(({ color }) => {
         if (!context) return;
         if (!canvas.current) return;
 
         context.fillStyle = color;
+        context.fillRect(0, 0, canvas.current.width, canvas.current.height);
+        context.fill();
+      }),
+      // TODO: 공통함수 빼기
+      // reset canvas
+      socket.addHandleGameEnded(() => {
+        if (!context) return;
+        if (!canvas.current) return;
+
+        context.fillStyle = "#ffffff";
         context.fillRect(0, 0, canvas.current.width, canvas.current.height);
         context.fill();
       }),
@@ -171,7 +192,7 @@ export default function Canvas({ socket }: { readonly socket: Socket }) {
   return (
     <div className="flex h-full w-full flex-row items-center justify-center gap-4 max-lg:flex-col">
       {/* TODO: 진행 여부 체크 후 적용 */}
-      {true ? <div>Waiting Players...</div> : null}
+      {/* {true ? <div>Waiting Players...</div> : null} */}
       <canvas
         width={600}
         height={600}
@@ -180,7 +201,7 @@ export default function Canvas({ socket }: { readonly socket: Socket }) {
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
       />
-      <div className="flex flex-col gap-4">
+      <div className="relative flex flex-col gap-4 p-4">
         <Slider
           {...htmlAttribute}
           label="펜 굵기"
@@ -234,6 +255,11 @@ export default function Canvas({ socket }: { readonly socket: Socket }) {
             Clear
           </Button>
         </div>
+        {readonly ? (
+          <div className="absolute left-0 top-0 flex h-full w-full cursor-not-allowed items-center justify-center backdrop-blur">
+            상대방이 그린 그림을 맞추세요!
+          </div>
+        ) : null}
       </div>
     </div>
   );

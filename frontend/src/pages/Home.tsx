@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Canvas from "../components/Canvas";
 import ChatLog from "../components/ChatLog";
-import LeaderBoard from "../components/Leaderboard";
+import LeaderBoard from "../components/LeaderBoard";
 import { useInput } from "../hooks/useInput";
 import Socket from "../socket/Socket";
 
@@ -22,6 +22,8 @@ export default function Home() {
   const [chatLog, setChatLog] = useState<ChatData[]>([]);
   const [socket, setSocket] = useState<Socket>();
   const [players, setPlayers] = useState<Player[]>([]);
+  const [readonlyCanvas, setReadonlyCanvas] = useState(true);
+  const [word, setWord] = useState<string>();
 
   const addChatData = (data: ChatData) => {
     setChatLog((chatLog) => [...chatLog, data]);
@@ -47,13 +49,13 @@ export default function Home() {
     );
 
     const cleanUps = [
-      socket.setHandleNewUser(({ nickname }) => {
+      socket.addHandleNewUser(({ nickname }) => {
         toast.success(`${nickname}님이 접속하였습니다.`);
       }),
-      socket.setHandleDisconnected(({ nickname }) => {
+      socket.addHandleDisconnected(({ nickname }) => {
         toast.error(`${nickname}님이 퇴장하였습니다.`);
       }),
-      socket.setHandleNewMessage(({ message, nickname }) => {
+      socket.addHandleNewMessage(({ message, nickname }) => {
         console.log("new message received", message);
         addChatData({
           id: crypto.randomUUID(),
@@ -61,8 +63,20 @@ export default function Home() {
           nickname,
         });
       }),
-      socket.setHandlePlayerUpdate(({ players }) => {
+      socket.addHandlePlayerUpdate(({ players }) => {
         setPlayers(players);
+      }),
+      socket.addHandleGameStarted(() => {
+        setReadonlyCanvas(true);
+      }),
+      socket.addHandleLeaderNotify(({ word }) => {
+        setWord(word);
+        setReadonlyCanvas(false);
+      }),
+      socket.addHandleGameEnded(() => {
+        setWord(undefined);
+        setReadonlyCanvas(true);
+        toast.success(`Game ended successfully`);
       }),
     ];
 
@@ -87,7 +101,8 @@ export default function Home() {
         <Icon icon="solar:exit-bold-duotone" />
         Exit
       </Button>
-      {socket && <Canvas socket={socket} />}
+      <div>word: {word}</div>
+      {socket && <Canvas socket={socket} readonly={readonlyCanvas} />}
       <LeaderBoard players={players} />
       <ChatLog list={chatLog} className="rounded-xl p-3" />
       <Input

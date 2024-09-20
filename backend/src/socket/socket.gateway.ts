@@ -15,6 +15,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   public server: Server;
 
   private inProgress = false;
+  private leader: CatchMindUser = null;
   private sockets: CatchMindUser[] = [];
 
   handleConnection(client: Socket) {
@@ -26,7 +27,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.broadcast.emit('disconnected', { nickname: client.nickname });
     this.sockets = this.sockets.filter((socket) => socket.id !== client.id);
     this.playerUpdate();
-    if (this.sockets.length <= 1) {
+    if (this.sockets.length <= 1 || this.leader?.id === client.id) {
       this.endGame();
     }
 
@@ -92,14 +93,18 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (this.inProgress) return;
 
     this.inProgress = true;
-    const leader =
-      this.sockets[Math.floor(Math.random() * this.sockets.length)];
+    this.leader = this.sockets[Math.floor(Math.random() * this.sockets.length)];
     const word = randomWord();
-    this.server.to(leader.id).emit('leaderNotify', { word });
-    this.server.emit('gameStarted');
+    setTimeout(() => {
+      this.server.emit('gameStarted');
+      this.server.to(this.leader.id).emit('leaderNotify', { word });
+    }, 2000);
+    console.log('start game');
   }
 
   private endGame() {
     this.inProgress = false;
+    this.server.emit('gameEnded');
+    console.log('gameEnded');
   }
 }

@@ -10,21 +10,21 @@ export default class Socket {
     this.socket.emit(Events.setNickname, { nickname });
   }
 
-  public setHandleNewUser(
+  public addHandleNewUser(
     listener: ({ nickname }: { nickname: string }) => void,
   ) {
     this.socket.on(Events.newUser, listener);
     return () => this.socket.off(Events.newUser, listener);
   }
 
-  public setHandleDisconnected(
+  public addHandleDisconnected(
     listener: ({ nickname }: { nickname: string }) => void,
   ) {
     this.socket.on(Events.disconnected, listener);
     return () => this.socket.off(Events.disconnected, listener);
   }
 
-  public setHandleNewMessage(
+  public addHandleNewMessage(
     listener: ({
       message,
       nickname,
@@ -37,14 +37,14 @@ export default class Socket {
     return () => this.socket.off(Events.newMessage, listener);
   }
 
-  public setHandleBeganPath(
+  public addHandleBeganPath(
     listener: ({ x, y }: { x: number; y: number }) => void,
   ) {
     this.socket.on(Events.beganPath, listener);
     return () => this.socket.off(Events.beganPath, listener);
   }
 
-  public setHandleStrokedPath(
+  public addHandleStrokedPath(
     listener: ({
       x,
       y,
@@ -62,21 +62,31 @@ export default class Socket {
     return () => this.socket.off(Events.strokedPath, listener);
   }
 
-  public setHandleFilled(listener: ({ color }: { color: string }) => void) {
+  public addHandleFilled(listener: ({ color }: { color: string }) => void) {
     this.socket.on(Events.filled, listener);
     return () => this.socket.off(Events.filled, listener);
   }
 
-  public setHandlePlayerUpdate(
+  public addHandlePlayerUpdate(
     listener: ({ players }: { players: Player[] }) => void,
   ) {
     this.socket.on(Events.playerUpdate, listener);
     return () => this.socket.off(Events.playerUpdate, listener);
   }
 
-  public setHandleGameStarted(listener: () => void) {
+  public addHandleGameStarted(listener: () => void) {
     this.socket.on(Events.gameStarted, listener);
     return () => this.socket.off(Events.gameStarted, listener);
+  }
+
+  public addHandleLeaderNotify(listener: ({ word }: { word: string }) => void) {
+    this.socket.on(Events.leaderNotify, listener);
+    return () => this.socket.off(Events.leaderNotify, listener);
+  }
+
+  public addHandleGameEnded(listener: () => void) {
+    this.socket.on(Events.gameEnded, listener);
+    return () => this.socket.off(Events.gameEnded, listener);
   }
 
   // private init() {
