@@ -67,9 +67,13 @@ export default function Home() {
       socket.addHandlePlayerUpdate(({ players }) => {
         setPlayers(players);
       }),
+      socket.addHandleGameStarting(() => {
+        setMessage("Game will starting!");
+      }),
       socket.addHandleGameStarted(() => {
         setIsPainter(false);
-        setMessage("Game started! Catch my mind!");
+        setChatLog([]);
+        setMessage("Game started!");
       }),
       socket.addHandleLeaderNotify(({ word }) => {
         setWord(word);
@@ -80,9 +84,6 @@ export default function Home() {
         setWord(undefined);
         setIsPainter(false);
         setMessage("Game ended");
-      }),
-      socket.addHandleGameStarting(() => {
-        setMessage("Game will starting!");
       }),
     ];
 
@@ -129,7 +130,7 @@ export default function Home() {
       <ChatLog list={chatLog} className="rounded-xl p-3" />
       <Input
         {...htmlAttribute}
-        placeholder="메시지를 입력..."
+        placeholder="정답을 입력하세요"
         onKeyDown={handleKeydown}
         disabled={isPainter}
       />
