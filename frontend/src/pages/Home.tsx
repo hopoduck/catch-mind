@@ -1,5 +1,5 @@
 import { Icon } from "@iconify-icon/react/dist/iconify.mjs";
-import { Button, Input, Slider } from "@nextui-org/react";
+import { Button, Input } from "@nextui-org/react";
 import { KeyboardEventHandler, useEffect, useState } from "react";
 import Confetti from "react-confetti-boom";
 import toast from "react-hot-toast";
@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import Canvas from "../components/Canvas";
 import ChatLog from "../components/ChatLog";
 import LeaderBoard from "../components/LeaderBoard";
+import Timer from "../components/Timer";
 import { useInput } from "../hooks/useInput";
 import Socket from "../socket/Socket";
 
@@ -27,6 +28,8 @@ export default function Home() {
   const [word, setWord] = useState<string>();
   const [message, setMessage] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
+  const [startTime, setStartTime] = useState<number>();
+  const [painterId, setPainterId] = useState<string>();
 
   const addChatData = (data: ChatData) => {
     setChatLog((chatLog) => [...chatLog, data]);
@@ -72,12 +75,14 @@ export default function Home() {
       socket.addHandleGameStarting(() => {
         setMessage("Game will starting!");
       }),
-      socket.addHandleGameStarted(() => {
+      socket.addHandleGameStarted(({ id }) => {
         setIsPainter(false);
         setChatLog([]);
         setMessage("Game started!");
         setValue("");
+        setStartTime(Date.now());
         setShowConfetti(false);
+        setPainterId(id);
       }),
       socket.addHandleLeaderNotify(({ word }) => {
         setWord(word);
@@ -88,6 +93,7 @@ export default function Home() {
         setWord(undefined);
         setIsPainter(false);
         setMessage("Game ended");
+        setStartTime(undefined);
         setShowConfetti(true);
         // toast.success("정답은 뭐뭐 였습니다!", { position: "top-center" });
       }),
@@ -130,21 +136,9 @@ export default function Home() {
         <div>{message}</div>
         {word ? <div className="font-bold">{word}</div> : null}
       </div>
-      <div className="flex items-center justify-center gap-2">
-        <Icon
-          icon="solar:clock-circle-bold-duotone"
-          className="text-xl text-primary-500"
-        />
-        {/* TODO: 타임 아웃 표시 */}
-        <Slider
-          aria-label="Timeout"
-          color="primary"
-          hideThumb={true}
-          // value={}
-        />
-      </div>
+      {startTime !== undefined && <Timer start={startTime} duration={30000} />}
       {socket && <Canvas socket={socket} readonly={!isPainter} />}
-      <LeaderBoard players={players} myId={socket?.id} />
+      <LeaderBoard players={players} myId={socket?.id} painterId={painterId} />
       <ChatLog list={chatLog} className="rounded-xl p-3" />
       <Input
         {...htmlAttribute}

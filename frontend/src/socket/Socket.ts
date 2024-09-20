@@ -77,7 +77,7 @@ export default class Socket {
     return () => this.socket.off(ServerEmitEvent.playerUpdate, listener);
   }
 
-  public addHandleGameStarted(listener: () => void) {
+  public addHandleGameStarted(listener: ({ id }: { id: string }) => void) {
     this.socket.on(ServerEmitEvent.gameStarted, listener);
     return () => this.socket.off(ServerEmitEvent.gameStarted, listener);
   }

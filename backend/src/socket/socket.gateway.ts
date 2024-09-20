@@ -125,7 +125,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.word = randomWord();
     this.server.emit(ServerEmitEvent.gameStarting);
     this.startTimeoutId = setTimeout(() => {
-      this.server.emit(ServerEmitEvent.gameStarted);
+      this.server.emit(ServerEmitEvent.gameStarted, { id: this.leader.id });
       this.server
         .to(this.leader.id)
         .emit(ServerEmitEvent.leaderNotify, { word: this.word });
