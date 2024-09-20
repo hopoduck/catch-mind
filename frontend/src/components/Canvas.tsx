@@ -185,7 +185,9 @@ export default function Canvas({
               isIconOnly
               className="rounded-full shadow-md"
               style={{ backgroundColor: data.color }}
-              onClick={() => handleColorChange(data)}
+              onClick={() => {
+                handleColorChange(data);
+              }}
             >
               {colorData.color === data.color ? (
                 <Icon
@@ -200,19 +202,25 @@ export default function Canvas({
           <ButtonGroup>
             <Button
               color={action === Action.draw ? "primary" : "default"}
-              onClick={() => setAction(Action.draw)}
+              onClick={() => {
+                setAction(Action.draw);
+              }}
             >
               Draw
             </Button>
             <Button
               color={action === Action.fill ? "primary" : "default"}
-              onClick={() => setAction(Action.fill)}
+              onClick={() => {
+                setAction(Action.fill);
+              }}
             >
               Fill
             </Button>
             <Button
               color={action === Action.erase ? "primary" : "default"}
-              onClick={() => setAction(Action.erase)}
+              onClick={() => {
+                setAction(Action.erase);
+              }}
             >
               Erase
             </Button>

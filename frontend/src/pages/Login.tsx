@@ -13,7 +13,10 @@ export default function Login() {
     }
   };
   const handleSubmit = () => {
-    if (!value?.trim()) return alert("닉네임을 입력해주세요.");
+    if (!value.trim()) {
+      alert("닉네임을 입력해주세요.");
+      return;
+    }
 
     sessionStorage.setItem("nickname", value.trim());
     navigate("/");
