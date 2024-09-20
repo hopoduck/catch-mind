@@ -22,8 +22,9 @@ export default function Home() {
   const [chatLog, setChatLog] = useState<ChatData[]>([]);
   const [socket, setSocket] = useState<Socket>();
   const [players, setPlayers] = useState<Player[]>([]);
-  const [readonlyCanvas, setReadonlyCanvas] = useState(true);
+  const [isPainter, setIsPainter] = useState(true);
   const [word, setWord] = useState<string>();
+  const [message, setMessage] = useState("");
 
   const addChatData = (data: ChatData) => {
     setChatLog((chatLog) => [...chatLog, data]);
@@ -67,16 +68,21 @@ export default function Home() {
         setPlayers(players);
       }),
       socket.addHandleGameStarted(() => {
-        setReadonlyCanvas(true);
+        setIsPainter(false);
+        setMessage("Game started! Catch my mind!");
       }),
       socket.addHandleLeaderNotify(({ word }) => {
         setWord(word);
-        setReadonlyCanvas(false);
+        setIsPainter(true);
+        setMessage("You is painter! draw");
       }),
       socket.addHandleGameEnded(() => {
         setWord(undefined);
-        setReadonlyCanvas(true);
-        toast.success(`Game ended successfully`);
+        setIsPainter(false);
+        setMessage("Game ended");
+      }),
+      socket.addHandleGameStarting(() => {
+        setMessage("Game will starting!");
       }),
     ];
 
@@ -101,14 +107,18 @@ export default function Home() {
         <Icon icon="solar:exit-bold-duotone" />
         Exit
       </Button>
-      <div>word: {word}</div>
-      {socket && <Canvas socket={socket} readonly={readonlyCanvas} />}
+      <div className="flex items-center justify-center gap-1">
+        <div>{message}</div>
+        {word ? <div className="font-bold">{word}</div> : null}
+      </div>
+      {socket && <Canvas socket={socket} readonly={!isPainter} />}
       <LeaderBoard players={players} />
       <ChatLog list={chatLog} className="rounded-xl p-3" />
       <Input
         {...htmlAttribute}
         placeholder="메시지를 입력..."
         onKeyDown={handleKeydown}
+        disabled={isPainter}
       />
     </div>
   );

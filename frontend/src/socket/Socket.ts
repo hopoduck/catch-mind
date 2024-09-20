@@ -89,6 +89,11 @@ export default class Socket {
     return () => this.socket.off(Events.gameEnded, listener);
   }
 
+  public addHandleGameStarting(listener: () => void) {
+    this.socket.on(Events.gameStaring, listener);
+    return () => this.socket.off(Events.gameStaring, listener);
+  }
+
   // private init() {
   //   this.socket.on("newMessage", (data) => {
   //     console.log("received!", data);

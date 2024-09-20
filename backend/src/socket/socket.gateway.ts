@@ -15,6 +15,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   public server: Server;
 
   private inProgress = false;
+  private word: string;
   private leader: CatchMindUser = null;
   private sockets: CatchMindUser[] = [];
 
@@ -56,6 +57,19 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       message,
       nickname: client.nickname,
     });
+    if (message === this.word) {
+      this.sockets = this.sockets.map((socket) => {
+        if (socket.id === client.id) {
+          socket.points += 10;
+        }
+        return socket;
+      });
+      // TODO: 우승자 찾아서 폭죽이라도..
+      // this.server.emit('point', { ...winner, word: this.word });
+      this.playerUpdate();
+      this.endGame();
+    }
+
     console.log('new message!', message);
   }
 
@@ -94,11 +108,12 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.inProgress = true;
     this.leader = this.sockets[Math.floor(Math.random() * this.sockets.length)];
-    const word = randomWord();
+    this.word = randomWord();
+    this.server.emit('gameStarting');
     setTimeout(() => {
       this.server.emit('gameStarted');
-      this.server.to(this.leader.id).emit('leaderNotify', { word });
-    }, 2000);
+      this.server.to(this.leader.id).emit('leaderNotify', { word: this.word });
+    }, 5000);
     console.log('start game');
   }
 

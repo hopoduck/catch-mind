@@ -17,4 +17,5 @@ export enum Events {
   gameStarted = "gameStarted",
   leaderNotify = "leaderNotify",
   gameEnded = "gameEnded",
+  gameStaring = "gameStaring",
 }
