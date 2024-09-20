@@ -6,6 +6,8 @@ export enum ClientEmitEvent {
   beginPath = "beginPath",
   strokePath = "strokePath",
   fill = "fill",
+
+  skip = "skip",
 }
 
 export enum ServerEmitEvent {
@@ -22,4 +24,6 @@ export enum ServerEmitEvent {
   leaderNotify = "leaderNotify",
   gameEnded = "gameEnded",
   gameStarting = "gameStarting",
+
+  skipped = "skipped",
 }

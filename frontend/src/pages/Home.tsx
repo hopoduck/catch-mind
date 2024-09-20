@@ -1,6 +1,7 @@
 import { Icon } from "@iconify-icon/react/dist/iconify.mjs";
 import { Button, Input, Slider } from "@nextui-org/react";
 import { KeyboardEventHandler, useEffect, useState } from "react";
+import Confetti from "react-confetti-boom";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Canvas from "../components/Canvas";
@@ -22,9 +23,10 @@ export default function Home() {
   const [chatLog, setChatLog] = useState<ChatData[]>([]);
   const [socket, setSocket] = useState<Socket>();
   const [players, setPlayers] = useState<Player[]>([]);
-  const [isPainter, setIsPainter] = useState(true);
+  const [isPainter, setIsPainter] = useState(false);
   const [word, setWord] = useState<string>();
   const [message, setMessage] = useState("");
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const addChatData = (data: ChatData) => {
     setChatLog((chatLog) => [...chatLog, data]);
@@ -74,6 +76,7 @@ export default function Home() {
         setIsPainter(false);
         setChatLog([]);
         setMessage("Game started!");
+        setShowConfetti(false);
       }),
       socket.addHandleLeaderNotify(({ word }) => {
         setWord(word);
@@ -84,6 +87,8 @@ export default function Home() {
         setWord(undefined);
         setIsPainter(false);
         setMessage("Game ended");
+        setShowConfetti(true);
+        // toast.success("정답은 뭐뭐 였습니다!", { position: "top-center" });
       }),
     ];
 
@@ -97,17 +102,29 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <Button
-        className="flex gap-1"
-        color="danger"
-        onClick={() => {
-          sessionStorage.removeItem("nickname");
-          navigate("/login");
-        }}
-      >
-        <Icon icon="solar:exit-bold-duotone" />
-        Exit
-      </Button>
+      <div className="flex items-center justify-end gap-1">
+        {isPainter && (
+          <Button
+            className="flex gap-1"
+            color="warning"
+            onClick={() => socket?.sendSkip()}
+          >
+            <Icon icon="solar:skip-next-bold-duotone" />
+            Skip
+          </Button>
+        )}
+        <Button
+          className="flex gap-1"
+          color="danger"
+          onClick={() => {
+            sessionStorage.removeItem("nickname");
+            navigate("/login");
+          }}
+        >
+          <Icon icon="solar:exit-bold-duotone" />
+          Exit
+        </Button>
+      </div>
       <div className="flex items-center justify-center gap-1">
         <div>{message}</div>
         {word ? <div className="font-bold">{word}</div> : null}
@@ -126,7 +143,7 @@ export default function Home() {
         />
       </div>
       {socket && <Canvas socket={socket} readonly={!isPainter} />}
-      <LeaderBoard players={players} />
+      <LeaderBoard players={players} myId={socket?.id} />
       <ChatLog list={chatLog} className="rounded-xl p-3" />
       <Input
         {...htmlAttribute}
@@ -134,6 +151,7 @@ export default function Home() {
         onKeyDown={handleKeydown}
         disabled={isPainter}
       />
+      {showConfetti && <Confetti mode="boom" />}
     </div>
   );
 }

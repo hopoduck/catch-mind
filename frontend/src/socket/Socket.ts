@@ -10,6 +10,10 @@ export default class Socket {
     this.socket.emit(ClientEmitEvent.setNickname, { nickname });
   }
 
+  get id() {
+    return this.socket.id;
+  }
+
   public addHandleNewUser(
     listener: ({ nickname }: { nickname: string }) => void,
   ) {
@@ -119,6 +123,10 @@ export default class Socket {
 
   sendFill({ color }: { color: string }) {
     this.socket.emit(ClientEmitEvent.fill, { color });
+  }
+
+  sendSkip() {
+    this.socket.emit(ClientEmitEvent.skip);
   }
 
   disconnect() {

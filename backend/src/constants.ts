@@ -92,4 +92,5 @@ export const words = [
   'women',
 ];
 
-export const randomWord = () => words[Math.floor(Math.random() * words.length)];
+export const START_WAIT_TIME = 5000 as const;
+export const END_WAIT_TIME = 30000 as const;

@@ -3,8 +3,10 @@ import { Badge, Chip } from "@nextui-org/react";
 
 export default function LeaderBoard({
   players,
+  myId,
 }: {
   readonly players: Player[];
+  readonly myId?: string;
 }) {
   return (
     <div className="flex flex-row gap-2">
@@ -19,9 +21,8 @@ export default function LeaderBoard({
         >
           <Chip
             variant="flat"
-            color="primary"
-            // className="bg-sky-500 text-white"
-            // TODO: 그리는 사람일때만 붓 표시 + 색상 success로
+            color={myId === id ? "success" : "primary"}
+            // TODO: painter 추적이 되남..?
             endContent={<Icon icon="hugeicons:blush-brush-02" />}
             title="nickname"
           >

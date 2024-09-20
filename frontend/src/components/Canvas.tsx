@@ -164,8 +164,6 @@ export default function Canvas({
 
   return (
     <div className="flex h-full w-full flex-row items-center justify-center gap-4 max-lg:flex-col">
-      {/* TODO: 진행 여부 체크 후 적용 */}
-      {/* {true ? <div>Waiting Players...</div> : null} */}
       <canvas
         width={600}
         height={600}

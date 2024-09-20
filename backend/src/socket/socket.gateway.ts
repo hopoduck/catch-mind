@@ -6,8 +6,10 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { randomWord } from 'src/constants';
+import { END_WAIT_TIME, START_WAIT_TIME } from 'src/constants';
+import { randomWord } from 'src/util';
 import { CatchMindUser } from './socket';
+import { ClientEmitEvent, ServerEmitEvent } from './SocketEvent';
 
 @WebSocketGateway({ transports: ['websocket'] })
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -27,7 +29,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
-    client.broadcast.emit('disconnected', { nickname: client.nickname });
+    client.broadcast.emit(ServerEmitEvent.disconnected, {
+      nickname: client.nickname,
+    });
     this.sockets = this.sockets.filter((socket) => socket.id !== client.id);
     this.playerUpdate();
     if (this.sockets.length <= 1 || this.leader?.id === client.id) {
@@ -37,10 +41,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log('disconnected!!!', client.id, this.sockets);
   }
 
-  @SubscribeMessage('setNickname')
+  @SubscribeMessage(ClientEmitEvent.setNickname)
   handleSetNickname(client: Socket, { nickname }: { nickname: string }) {
     client.nickname = nickname;
-    client.broadcast.emit('newUser', { nickname });
+    client.broadcast.emit(ServerEmitEvent.newUser, { nickname });
     this.sockets.push({
       id: client.id,
       nickname,
@@ -53,21 +57,17 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log('set new nickname!', nickname);
   }
 
-  @SubscribeMessage('sendMessage')
+  @SubscribeMessage(ClientEmitEvent.sendMessage)
   handleSendMessage(client: Socket, { message }: { message: string }) {
-    client.broadcast.emit('newMessage', {
+    client.broadcast.emit(ServerEmitEvent.newMessage, {
       message,
       nickname: client.nickname,
     });
     if (message === this.word) {
-      this.sockets = this.sockets.map((socket) => {
-        if (socket.id === client.id) {
-          socket.points += 10;
-        }
-        return socket;
-      });
+      const winner = this.sockets.find((socket) => socket.id === client.id);
+      winner.points += 10;
       // TODO: 우승자 찾아서 폭죽이라도..
-      // this.server.emit('point', { ...winner, word: this.word });
+      // this.server.to(winner.id).emit(ServerEmitEvent.winner);
       this.playerUpdate();
       this.endGame();
     }
@@ -76,33 +76,44 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   // ------------- Canvas -------------
-  @SubscribeMessage('beginPath')
+  @SubscribeMessage(ClientEmitEvent.beginPath)
   handleBeginPath(client: Socket, { x, y }: { x: number; y: number }) {
-    client.broadcast.emit('beganPath', { x, y });
+    client.broadcast.emit(ServerEmitEvent.beganPath, { x, y });
     console.log('beginPath', x, y);
   }
 
-  @SubscribeMessage('strokePath')
+  @SubscribeMessage(ClientEmitEvent.strokePath)
   handleStrokePath(
     client: Socket,
     {
       x,
       y,
-      style,
-    }: { x: number; y: number; style: { color: string; width: number } },
+      color,
+      lineWidth,
+    }: { x: number; y: number; color: string; lineWidth: number },
   ) {
-    client.broadcast.emit('strokedPath', { x, y, style });
+    client.broadcast.emit(ServerEmitEvent.strokedPath, {
+      x,
+      y,
+      color,
+      lineWidth,
+    });
     console.log('strokePath', x, y);
   }
 
-  @SubscribeMessage('fill')
+  @SubscribeMessage(ClientEmitEvent.fill)
   handleFilled(client: Socket, { color }: { color: string }) {
-    client.broadcast.emit('filled', { color });
+    client.broadcast.emit(ServerEmitEvent.filled, { color });
     console.log('filled', color);
   }
 
+  @SubscribeMessage(ClientEmitEvent.skip)
+  handleSkipped() {
+    this.endGame();
+  }
+
   private playerUpdate() {
-    this.server.emit('playerUpdate', { players: this.sockets });
+    this.server.emit(ServerEmitEvent.playerUpdate, { players: this.sockets });
   }
 
   private startGame() {
@@ -112,19 +123,20 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.inProgress = true;
     this.leader = this.sockets[Math.floor(Math.random() * this.sockets.length)];
     this.word = randomWord();
-    this.server.emit('gameStarting');
+    this.server.emit(ServerEmitEvent.gameStarting);
     this.startTimeoutId = setTimeout(() => {
-      this.server.emit('gameStarted');
-      this.server.to(this.leader.id).emit('leaderNotify', { word: this.word });
-      this.startTimeoutId = undefined;
-      this.endTimeoutId = setTimeout(() => this.endGame(), 30 * 1000);
-    }, 5000);
+      this.server.emit(ServerEmitEvent.gameStarted);
+      this.server
+        .to(this.leader.id)
+        .emit(ServerEmitEvent.leaderNotify, { word: this.word });
+      this.endTimeoutId = setTimeout(() => this.endGame(), END_WAIT_TIME);
+    }, START_WAIT_TIME);
     console.log('start game');
   }
 
   private endGame() {
     this.inProgress = false;
-    this.server.emit('gameEnded');
+    this.server.emit(ServerEmitEvent.gameEnded);
     clearTimeout(this.startTimeoutId);
     clearTimeout(this.endTimeoutId);
     console.log('gameEnded');
