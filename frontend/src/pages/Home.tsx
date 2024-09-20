@@ -76,6 +76,7 @@ export default function Home() {
         setIsPainter(false);
         setChatLog([]);
         setMessage("Game started!");
+        setValue("");
         setShowConfetti(false);
       }),
       socket.addHandleLeaderNotify(({ word }) => {

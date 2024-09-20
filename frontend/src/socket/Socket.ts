@@ -52,14 +52,13 @@ export default class Socket {
     listener: ({
       x,
       y,
-      style,
+      color,
+      lineWidth,
     }: {
       x: number;
       y: number;
-      style: {
-        color: string;
-        width: number;
-      };
+      color: string;
+      lineWidth: number;
     }) => void,
   ) {
     this.socket.on(ServerEmitEvent.strokedPath, listener);
@@ -109,16 +108,15 @@ export default class Socket {
   sendStrokePath({
     x,
     y,
-    style,
+    color,
+    lineWidth,
   }: {
     x: number;
     y: number;
-    style: {
-      color: string;
-      width: number;
-    };
+    color: string;
+    lineWidth: number;
   }) {
-    this.socket.emit(ClientEmitEvent.strokePath, { x, y, style });
+    this.socket.emit(ClientEmitEvent.strokePath, { x, y, color, lineWidth });
   }
 
   sendFill({ color }: { color: string }) {

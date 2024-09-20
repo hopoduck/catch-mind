@@ -92,10 +92,8 @@ export default function Canvas({
     socket.sendStrokePath({
       x: e.nativeEvent.offsetX,
       y: e.nativeEvent.offsetY,
-      style: {
-        color,
-        width: value,
-      },
+      color,
+      lineWidth: value,
     });
   };
 
@@ -134,12 +132,12 @@ export default function Canvas({
       socket.addHandleBeganPath(({ x, y }) => {
         canvas.start(x, y);
       }),
-      socket.addHandleStrokedPath(({ x, y, style }) => {
+      socket.addHandleStrokedPath(({ x, y, lineWidth, color }) => {
         canvas.stroke({
           x,
           y,
-          lineWidth: style.width,
-          color: style.color,
+          lineWidth,
+          color,
         });
       }),
       socket.addHandleFilled(({ color }) => {
