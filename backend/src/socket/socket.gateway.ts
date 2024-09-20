@@ -15,6 +15,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   public server: Server;
 
   private inProgress = false;
+  private startTimeoutId: NodeJS.Timeout;
+  private endTimeoutId: NodeJS.Timeout;
   private word: string;
   private leader: CatchMindUser = null;
   private sockets: CatchMindUser[] = [];
@@ -105,14 +107,17 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private startGame() {
     if (this.inProgress) return;
+    if (this.sockets.length <= 1) return;
 
     this.inProgress = true;
     this.leader = this.sockets[Math.floor(Math.random() * this.sockets.length)];
     this.word = randomWord();
     this.server.emit('gameStarting');
-    setTimeout(() => {
+    this.startTimeoutId = setTimeout(() => {
       this.server.emit('gameStarted');
       this.server.to(this.leader.id).emit('leaderNotify', { word: this.word });
+      this.startTimeoutId = undefined;
+      this.endTimeoutId = setTimeout(() => this.endGame(), 30 * 1000);
     }, 5000);
     console.log('start game');
   }
@@ -120,6 +125,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private endGame() {
     this.inProgress = false;
     this.server.emit('gameEnded');
+    clearTimeout(this.startTimeoutId);
+    clearTimeout(this.endTimeoutId);
     console.log('gameEnded');
+
+    this.startGame();
   }
 }
