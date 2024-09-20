@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useInputNumber } from "../hooks/useInput";
 import Socket from "../socket/Socket";
+import CanvasUtil from "../util/CanvasUtil";
 
 const colors = [
   "#000000",
@@ -37,40 +38,30 @@ export default function Canvas({
   readonly socket: Socket;
   readonly readonly: boolean;
 }) {
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const { value, htmlAttribute } = useInputNumber(1);
-  const [context, setContext] = useState<CanvasRenderingContext2D>();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvas, setCanvas] = useState<CanvasUtil>();
   const [action, setAction] = useState<Action>(Action.draw);
+  const { value, htmlAttribute } = useInputNumber(1);
   const [colorData, setColorData] = useState<(typeof colors)[0]>(colors[0]);
   const [isDrawing, setIsDrawing] = useState(false);
 
   const handleMouseDown: MouseEventHandler<HTMLElement> = (e) => {
-    if (!context) return;
-    if (!canvas.current) return;
+    if (!canvas) return;
     if (readonly) return;
 
     e.preventDefault();
-    context.beginPath();
-    context.lineWidth = value;
+
     switch (action) {
       case Action.fill:
-        context.fillStyle = colorData.color;
-        context.fillRect(0, 0, canvas.current.width, canvas.current.height);
+        canvas.fill(colorData.color);
         socket.sendFill({ color: colorData.color });
         return;
       case Action.erase:
-        setIsDrawing(true);
-        context.fillStyle = "#ffffff";
-        context.strokeStyle = "#ffffff";
-        break;
       case Action.draw:
         setIsDrawing(true);
-        context.fillStyle = colorData.color;
-        context.strokeStyle = colorData.color;
+        canvas.start(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
         break;
     }
-
-    context.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
     socket.sendBeginPath({
       x: e.nativeEvent.offsetX,
       y: e.nativeEvent.offsetY,
@@ -78,36 +69,37 @@ export default function Canvas({
   };
 
   const handleMouseUp = useCallback(() => {
-    if (!context) return;
     if (!isDrawing) return;
     if (readonly) return;
 
     setIsDrawing(false);
-  }, [context, isDrawing, readonly]);
+  }, [isDrawing, readonly]);
 
   const handleMouseMove: MouseEventHandler<HTMLElement> = (e) => {
-    if (!context) return;
+    if (!canvas) return;
     if (!isDrawing) return;
     if (readonly) return;
 
     e.preventDefault();
-    context.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-    context.stroke();
+
+    const color = action === Action.erase ? "#ffffff" : colorData.color;
+    canvas.stroke({
+      x: e.nativeEvent.offsetX,
+      y: e.nativeEvent.offsetY,
+      color,
+      lineWidth: value,
+    });
     socket.sendStrokePath({
       x: e.nativeEvent.offsetX,
       y: e.nativeEvent.offsetY,
       style: {
-        color:
-          typeof context.strokeStyle === "string"
-            ? context.strokeStyle
-            : "#000000",
-        width: context.lineWidth,
+        color,
+        width: value,
       },
     });
   };
 
   const handleColorChange = (data: (typeof colors)[0]) => {
-    if (!context) return;
     if (readonly) return;
 
     if (action === Action.erase) {
@@ -117,70 +109,51 @@ export default function Canvas({
   };
 
   const handleClear = () => {
-    if (!context) return;
-    if (!canvas.current) return;
+    if (!canvas) return;
     if (readonly) return;
 
-    context.beginPath();
-    context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, canvas.current.width, canvas.current.height);
-    context.fill();
-    socket.sendFill({ color: context.fillStyle });
+    canvas.clear();
+    socket.sendFill({ color: "#ffffff" });
   };
 
   useEffect(() => {
-    if (!canvas.current) return;
-    const current = canvas.current;
-    current.width = 600;
-    current.height = 600;
-    const context = current.getContext("2d");
-    if (context) {
-      setContext(context);
-    }
+    if (!canvasRef.current) return;
+
+    const canvas = new CanvasUtil(canvasRef.current);
+    setCanvas(canvas);
 
     return () => {
-      context?.clearRect(0, 0, current.width, current.height);
+      canvas.clear();
     };
-  }, [canvas]);
+  }, []);
 
   useEffect(() => {
+    if (!canvas) return;
+
     const cleanUps = [
       socket.addHandleBeganPath(({ x, y }) => {
-        context?.beginPath();
-        context?.moveTo(x, y);
+        canvas.start(x, y);
       }),
       socket.addHandleStrokedPath(({ x, y, style }) => {
-        if (!context) return;
-
-        context.strokeStyle = style.color;
-        context.lineWidth = style.width;
-        context.lineTo(x, y);
-        context.stroke();
+        canvas.stroke({
+          x,
+          y,
+          lineWidth: style.width,
+          color: style.color,
+        });
       }),
       socket.addHandleFilled(({ color }) => {
-        if (!context) return;
-        if (!canvas.current) return;
-
-        context.fillStyle = color;
-        context.fillRect(0, 0, canvas.current.width, canvas.current.height);
-        context.fill();
+        canvas.fill(color);
       }),
-      // TODO: 공통함수 빼기
-      // reset canvas
       socket.addHandleGameEnded(() => {
-        if (!context) return;
-        if (!canvas.current) return;
-
-        context.fillStyle = "#ffffff";
-        context.fillRect(0, 0, canvas.current.width, canvas.current.height);
-        context.fill();
+        canvas.clear();
       }),
     ];
 
     return () => {
       cleanUps.forEach((cleanUp) => cleanUp());
     };
-  }, [context, socket]);
+  }, [canvas, socket]);
 
   useEffect(() => {
     window.addEventListener("mouseup", handleMouseUp);
@@ -197,7 +170,7 @@ export default function Canvas({
         width={600}
         height={600}
         className="rounded-2xl border-2 border-sky-300 bg-white shadow"
-        ref={canvas}
+        ref={canvasRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
       />

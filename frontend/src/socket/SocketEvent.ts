@@ -1,21 +1,25 @@
-export enum Events {
+export enum ClientEmitEvent {
   setNickname = "setNickname",
-  newUser = "newUser",
   disconnect = "disconnect",
-  disconnected = "disconnected",
   sendMessage = "sendMessage",
-  newMessage = "newMessage",
 
   beginPath = "beginPath",
-  beganPath = "beganPath",
   strokePath = "strokePath",
-  strokedPath = "strokedPath",
   fill = "fill",
+}
+
+export enum ServerEmitEvent {
+  newUser = "newUser",
+  disconnected = "disconnected",
+  newMessage = "newMessage",
+
+  beganPath = "beganPath",
+  strokedPath = "strokedPath",
   filled = "filled",
 
   playerUpdate = "playerUpdate",
   gameStarted = "gameStarted",
   leaderNotify = "leaderNotify",
   gameEnded = "gameEnded",
-  gameStaring = "gameStaring",
+  gameStarting = "gameStarting",
 }

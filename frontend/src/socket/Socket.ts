@@ -1,5 +1,5 @@
 import { io } from "socket.io-client";
-import { Events } from "./Events";
+import { ClientEmitEvent, ServerEmitEvent } from "./SocketEvent";
 
 export default class Socket {
   private socket = io({ transports: ["websocket"] });
@@ -7,21 +7,21 @@ export default class Socket {
 
   constructor(nickname: string) {
     this.nickname = nickname;
-    this.socket.emit(Events.setNickname, { nickname });
+    this.socket.emit(ClientEmitEvent.setNickname, { nickname });
   }
 
   public addHandleNewUser(
     listener: ({ nickname }: { nickname: string }) => void,
   ) {
-    this.socket.on(Events.newUser, listener);
-    return () => this.socket.off(Events.newUser, listener);
+    this.socket.on(ServerEmitEvent.newUser, listener);
+    return () => this.socket.off(ServerEmitEvent.newUser, listener);
   }
 
   public addHandleDisconnected(
     listener: ({ nickname }: { nickname: string }) => void,
   ) {
-    this.socket.on(Events.disconnected, listener);
-    return () => this.socket.off(Events.disconnected, listener);
+    this.socket.on(ServerEmitEvent.disconnected, listener);
+    return () => this.socket.off(ServerEmitEvent.disconnected, listener);
   }
 
   public addHandleNewMessage(
@@ -33,15 +33,15 @@ export default class Socket {
       nickname: string;
     }) => void,
   ) {
-    this.socket.on(Events.newMessage, listener);
-    return () => this.socket.off(Events.newMessage, listener);
+    this.socket.on(ServerEmitEvent.newMessage, listener);
+    return () => this.socket.off(ServerEmitEvent.newMessage, listener);
   }
 
   public addHandleBeganPath(
     listener: ({ x, y }: { x: number; y: number }) => void,
   ) {
-    this.socket.on(Events.beganPath, listener);
-    return () => this.socket.off(Events.beganPath, listener);
+    this.socket.on(ServerEmitEvent.beganPath, listener);
+    return () => this.socket.off(ServerEmitEvent.beganPath, listener);
   }
 
   public addHandleStrokedPath(
@@ -58,57 +58,48 @@ export default class Socket {
       };
     }) => void,
   ) {
-    this.socket.on(Events.strokedPath, listener);
-    return () => this.socket.off(Events.strokedPath, listener);
+    this.socket.on(ServerEmitEvent.strokedPath, listener);
+    return () => this.socket.off(ServerEmitEvent.strokedPath, listener);
   }
 
   public addHandleFilled(listener: ({ color }: { color: string }) => void) {
-    this.socket.on(Events.filled, listener);
-    return () => this.socket.off(Events.filled, listener);
+    this.socket.on(ServerEmitEvent.filled, listener);
+    return () => this.socket.off(ServerEmitEvent.filled, listener);
   }
 
   public addHandlePlayerUpdate(
     listener: ({ players }: { players: Player[] }) => void,
   ) {
-    this.socket.on(Events.playerUpdate, listener);
-    return () => this.socket.off(Events.playerUpdate, listener);
+    this.socket.on(ServerEmitEvent.playerUpdate, listener);
+    return () => this.socket.off(ServerEmitEvent.playerUpdate, listener);
   }
 
   public addHandleGameStarted(listener: () => void) {
-    this.socket.on(Events.gameStarted, listener);
-    return () => this.socket.off(Events.gameStarted, listener);
+    this.socket.on(ServerEmitEvent.gameStarted, listener);
+    return () => this.socket.off(ServerEmitEvent.gameStarted, listener);
   }
 
   public addHandleLeaderNotify(listener: ({ word }: { word: string }) => void) {
-    this.socket.on(Events.leaderNotify, listener);
-    return () => this.socket.off(Events.leaderNotify, listener);
+    this.socket.on(ServerEmitEvent.leaderNotify, listener);
+    return () => this.socket.off(ServerEmitEvent.leaderNotify, listener);
   }
 
   public addHandleGameEnded(listener: () => void) {
-    this.socket.on(Events.gameEnded, listener);
-    return () => this.socket.off(Events.gameEnded, listener);
+    this.socket.on(ServerEmitEvent.gameEnded, listener);
+    return () => this.socket.off(ServerEmitEvent.gameEnded, listener);
   }
 
   public addHandleGameStarting(listener: () => void) {
-    this.socket.on(Events.gameStaring, listener);
-    return () => this.socket.off(Events.gameStaring, listener);
+    this.socket.on(ServerEmitEvent.gameStarting, listener);
+    return () => this.socket.off(ServerEmitEvent.gameStarting, listener);
   }
 
-  // private init() {
-  //   this.socket.on("newMessage", (data) => {
-  //     console.log("received!", data);
-  //   });
-  //   this.socket.on("messageNotification", ({ message }) => {
-  //     console.log("somebody said ", message);
-  //   });
-  // }
-
   sendMessage(message: string) {
-    this.socket.emit(Events.sendMessage, { message });
+    this.socket.emit(ClientEmitEvent.sendMessage, { message });
   }
 
   sendBeginPath({ x, y }: { x: number; y: number }) {
-    this.socket.emit(Events.beginPath, { x, y });
+    this.socket.emit(ClientEmitEvent.beginPath, { x, y });
   }
 
   sendStrokePath({
@@ -123,11 +114,11 @@ export default class Socket {
       width: number;
     };
   }) {
-    this.socket.emit(Events.strokePath, { x, y, style });
+    this.socket.emit(ClientEmitEvent.strokePath, { x, y, style });
   }
 
   sendFill({ color }: { color: string }) {
-    this.socket.emit(Events.fill, { color });
+    this.socket.emit(ClientEmitEvent.fill, { color });
   }
 
   disconnect() {

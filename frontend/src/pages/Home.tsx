@@ -1,5 +1,5 @@
 import { Icon } from "@iconify-icon/react/dist/iconify.mjs";
-import { Button, Input } from "@nextui-org/react";
+import { Button, Input, Slider } from "@nextui-org/react";
 import { KeyboardEventHandler, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -74,7 +74,7 @@ export default function Home() {
       socket.addHandleLeaderNotify(({ word }) => {
         setWord(word);
         setIsPainter(true);
-        setMessage("You is painter! draw");
+        setMessage("You are painter! Draw");
       }),
       socket.addHandleGameEnded(() => {
         setWord(undefined);
@@ -110,6 +110,19 @@ export default function Home() {
       <div className="flex items-center justify-center gap-1">
         <div>{message}</div>
         {word ? <div className="font-bold">{word}</div> : null}
+      </div>
+      <div className="flex items-center justify-center gap-2">
+        <Icon
+          icon="solar:clock-circle-bold-duotone"
+          className="text-xl text-primary-500"
+        />
+        {/* TODO: 타임 아웃 표시 */}
+        <Slider
+          aria-label="Timeout"
+          color="primary"
+          hideThumb={true}
+          // value={}
+        />
       </div>
       {socket && <Canvas socket={socket} readonly={!isPainter} />}
       <LeaderBoard players={players} />
