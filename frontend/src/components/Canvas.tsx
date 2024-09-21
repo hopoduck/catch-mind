@@ -83,7 +83,7 @@ export default function Canvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvas, setCanvas] = useState<CanvasUtil>();
   const [action, setAction] = useState<Action>(Action.draw);
-  const { value, htmlAttribute } = useInputNumber(1);
+  const { value: lineWidth, htmlAttribute } = useInputNumber(1);
   const [colorData, setColorData] = useState<(typeof colors)[0]>(colors[0]);
   const [isDrawing, setIsDrawing] = useState(false);
 
@@ -95,19 +95,16 @@ export default function Canvas({
 
     switch (action) {
       case Action.fill:
-        canvas.fill(colorData.color);
-        socket.sendFill({ color: colorData.color });
+        socket.sendFill(canvas.fill(colorData.color));
         return;
       case Action.erase:
       case Action.draw:
         setIsDrawing(true);
-        canvas.start(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+        socket.sendBeginPath(
+          canvas.start(e.nativeEvent.offsetX, e.nativeEvent.offsetY),
+        );
         break;
     }
-    socket.sendBeginPath({
-      x: e.nativeEvent.offsetX,
-      y: e.nativeEvent.offsetY,
-    });
   };
 
   const handleMouseUp = useCallback(() => {
@@ -125,19 +122,35 @@ export default function Canvas({
     e.preventDefault();
 
     const color = action === Action.erase ? "#ffffff" : colorData.color;
-    canvas.stroke({
-      x: e.nativeEvent.offsetX,
-      y: e.nativeEvent.offsetY,
-      color,
-      lineWidth: value,
-    });
-    socket.sendStrokePath({
-      x: e.nativeEvent.offsetX,
-      y: e.nativeEvent.offsetY,
-      color,
-      lineWidth: value,
-    });
+    socket.sendStrokePath(
+      canvas.stroke({
+        x: e.nativeEvent.offsetX,
+        y: e.nativeEvent.offsetY,
+        color,
+        lineWidth,
+      }),
+    );
   };
+
+  // TODO: 마우스 나갔다 들어올 때 좌표가 튀는데 왜 튀는지 수정 후 작업..
+  // const handleMouseEnterAndLeave: MouseEventHandler<HTMLElement> = (e) => {
+  //   if (!canvas) return;
+  //   if (!isDrawing) return;
+  //   if (readonly) return;
+
+  //   const newLocal = canvas.start(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+  //   console.log(
+  //     "is enter or leave",
+  //     e.nativeEvent.offsetX,
+  //     e.nativeEvent.offsetY,
+  //     e.target,
+  //     e.currentTarget,
+  //     newLocal,
+  //   );
+  //   e.preventDefault();
+
+  //   socket.sendBeginPath(newLocal);
+  // };
 
   const handleColorChange = (data: (typeof colors)[0]) => {
     if (readonly) return;
@@ -152,8 +165,7 @@ export default function Canvas({
     if (!canvas) return;
     if (readonly) return;
 
-    canvas.clear();
-    socket.sendFill({ color: "#ffffff" });
+    socket.sendFill(canvas.clear());
   };
 
   useEffect(() => {
@@ -172,12 +184,12 @@ export default function Canvas({
 
     const cleanUps = [
       socket.addHandleBeganPath(({ x, y }) => {
-        canvas.start(x, y);
+        canvas.start(...canvas.canvasToLocal(x, y));
       }),
       socket.addHandleStrokedPath(({ x, y, lineWidth, color }) => {
         canvas.stroke({
-          x,
-          y,
+          x: canvas.canvasToLocal(x)[0],
+          y: canvas.canvasToLocal(y)[0],
           lineWidth,
           color,
         });
@@ -205,15 +217,16 @@ export default function Canvas({
   return (
     <div className="flex h-full w-full flex-row items-center justify-center gap-4 max-lg:flex-col">
       <canvas
-        width={600}
-        height={600}
-        className="rounded-2xl border-2 border-sky-300 bg-white shadow"
+        className="max-h-full max-w-full rounded-2xl border-2 border-sky-300 bg-white shadow"
         ref={canvasRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseUp}
+        // onMouseLeave={handleMouseEnterAndLeave}
+        // onMouseEnter={handleMouseEnterAndLeave}
       />
       {!readonly && (
-        <div className="relative flex flex-col gap-4 p-4">
+        <div className="relative flex max-w-96 flex-col gap-4 p-4">
           <div className="flex flex-col gap-1">
             <div className="text-sm">펜 굵기</div>
             <Slider
@@ -230,7 +243,7 @@ export default function Canvas({
               ]}
             />
           </div>
-          <div className="flex w-96 flex-row flex-wrap items-center justify-center gap-2">
+          <div className="flex flex-row flex-wrap items-center justify-center gap-2">
             {colors.map((data) => (
               <Button
                 key={data.id}
