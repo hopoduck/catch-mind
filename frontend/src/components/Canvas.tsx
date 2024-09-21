@@ -212,74 +212,87 @@ export default function Canvas({
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
       />
-      <div className="relative flex flex-col gap-4 p-4">
-        <Slider
-          {...htmlAttribute}
-          label="펜 굵기"
-          minValue={1}
-          maxValue={15}
-          step={1}
-        />
-        <div className="flex w-96 flex-row flex-wrap items-center justify-center gap-2">
-          {colors.map((data) => (
-            <Button
-              key={data.id}
-              isIconOnly
-              className="rounded-full shadow-md"
-              style={{ backgroundColor: data.color }}
-              onClick={() => {
-                handleColorChange(data);
-              }}
-            >
-              {colorData.color === data.color ? (
-                <Icon
-                  icon="line-md:check-all"
-                  className="flex h-full w-full items-center justify-center rounded-full bg-black bg-opacity-20 text-2xl text-white hover:bg-opacity-0"
-                />
-              ) : null}
-            </Button>
-          ))}
-        </div>
-        <div className="flex justify-between">
-          <ButtonGroup>
-            <Button
-              color={action === Action.draw ? "primary" : "default"}
-              onClick={() => {
-                setAction(Action.draw);
-              }}
-            >
-              Draw
-            </Button>
-            <Button
-              color={action === Action.fill ? "primary" : "default"}
-              onClick={() => {
-                setAction(Action.fill);
-              }}
-            >
-              Fill
-            </Button>
-            <Button
-              color={action === Action.erase ? "primary" : "default"}
-              onClick={() => {
-                setAction(Action.erase);
-              }}
-            >
-              Erase
-            </Button>
-          </ButtonGroup>
-          <Button
-            onClick={handleClear}
-            className="bg-red-400 px-10 font-bold text-white"
-          >
-            Clear
-          </Button>
-        </div>
-        {readonly ? (
-          <div className="absolute left-0 top-0 flex h-full w-full cursor-not-allowed items-center justify-center backdrop-blur">
-            상대방이 그린 그림을 맞추세요!
+      {!readonly && (
+        <div className="relative flex flex-col gap-4 p-4">
+          <div className="flex flex-col gap-1">
+            <div className="text-sm">펜 굵기</div>
+            <Slider
+              {...htmlAttribute}
+              minValue={1}
+              maxValue={15}
+              step={1}
+              showTooltip
+              aria-label="펜 굵기"
+              marks={[
+                { label: "5", value: 5 },
+                { label: "10", value: 10 },
+                { label: "15", value: 15 },
+              ]}
+            />
           </div>
-        ) : null}
-      </div>
+          <div className="flex w-96 flex-row flex-wrap items-center justify-center gap-2">
+            {colors.map((data) => (
+              <Button
+                key={data.id}
+                isIconOnly
+                className="rounded-full shadow-md"
+                style={{ backgroundColor: data.color }}
+                onClick={() => {
+                  handleColorChange(data);
+                }}
+              >
+                {colorData.color === data.color ? (
+                  <Icon
+                    icon="line-md:check-all"
+                    className="flex h-full w-full items-center justify-center rounded-full bg-black bg-opacity-20 text-2xl text-white hover:bg-opacity-0"
+                  />
+                ) : null}
+              </Button>
+            ))}
+          </div>
+          <div className="flex justify-between">
+            <ButtonGroup>
+              <Button
+                color={action === Action.draw ? "primary" : "default"}
+                onClick={() => {
+                  setAction(Action.draw);
+                }}
+              >
+                <Icon icon="solar:pallete-2-bold-duotone" className="text-xl" />
+              </Button>
+              <Button
+                color={action === Action.fill ? "primary" : "default"}
+                onClick={() => {
+                  setAction(Action.fill);
+                }}
+              >
+                <Icon
+                  icon="solar:paint-roller-bold-duotone"
+                  className="text-xl"
+                />
+              </Button>
+              <Button
+                color={action === Action.erase ? "primary" : "default"}
+                onClick={() => {
+                  setAction(Action.erase);
+                }}
+              >
+                <Icon icon="solar:eraser-bold-duotone" className="text-xl" />
+              </Button>
+            </ButtonGroup>
+            <Button
+              onClick={handleClear}
+              className="bg-red-400 px-10 font-bold text-white"
+            >
+              <Icon
+                icon="solar:trash-bin-trash-bold-duotone"
+                className="text-xl"
+              />
+            </Button>
+          </div>
+          {/* <div className="absolute left-0 top-0 flex h-full w-full cursor-not-allowed items-center justify-center backdrop-blur"></div> */}
+        </div>
+      )}
     </div>
   );
 }

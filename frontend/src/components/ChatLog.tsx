@@ -24,7 +24,7 @@ export default function ChatLog({
       ))}
       {list.length === 0 ? (
         <div className="w-full text-center italic text-gray-600">
-          메시지를 전송해보세요!
+          정답을 맞춰보세요!
         </div>
       ) : null}
     </ul>

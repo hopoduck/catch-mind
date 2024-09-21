@@ -25,8 +25,9 @@ export default function Home() {
   const [socket, setSocket] = useState<Socket>();
   const [players, setPlayers] = useState<Player[]>([]);
   const [isPainter, setIsPainter] = useState(false);
-  const [word, setWord] = useState<string>();
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(
+    "사용자를 기다리고 있습니다... 2명 이상 접속 시 게임이 시작됩니다.",
+  );
   const [showConfetti, setShowConfetti] = useState(false);
   const [duration, setDuration] = useState<{ start: number; end: number }>();
   const [painterId, setPainterId] = useState<string>();
@@ -61,7 +62,6 @@ export default function Home() {
         toast.error(`${nickname}님이 퇴장하였습니다.`);
       }),
       socket.addHandleNewMessage(({ message, nickname }) => {
-        console.log("new message received", message);
         addChatData({
           id: crypto.randomUUID(),
           message,
@@ -72,27 +72,25 @@ export default function Home() {
         setPlayers(players);
       }),
       socket.addHandleGameStarting(({ start, end }) => {
-        setMessage("Game will starting!");
+        setMessage("게임이 잠시 후 시작됩니다!");
         setDuration({ start, end });
       }),
       socket.addHandleGameStarted(({ id, start, end }) => {
         setIsPainter(false);
         setChatLog([]);
-        setMessage("Game started!");
+        setMessage("게임이 시작되었습니다. 그림을 보고 정답을 입력하세요.");
         setValue("");
         setDuration({ start, end });
         setShowConfetti(false);
         setPainterId(id);
       }),
       socket.addHandlePainterNotify(({ word }) => {
-        setWord(word);
         setIsPainter(true);
-        setMessage("You are painter! Draw");
+        setMessage(`그릴 차례입니다. 단어는 "${word}"입니다.`);
       }),
       socket.addHandleGameEnded(({ winnerId, word }) => {
-        setWord(undefined);
         setIsPainter(false);
-        toast.success(`Game ended! Message was: ${word}`, {
+        toast.success(`게임이 종료되었습니다! 단어는 "${word}"였습니다.`, {
           position: "top-center",
         });
         setDuration(undefined);
@@ -120,7 +118,7 @@ export default function Home() {
             onClick={() => socket?.sendSkip()}
           >
             <Icon icon="solar:skip-next-bold-duotone" />
-            Skip
+            넘기기
           </Button>
         )}
         <Button
@@ -132,12 +130,11 @@ export default function Home() {
           }}
         >
           <Icon icon="solar:exit-bold-duotone" />
-          Exit
+          나가기
         </Button>
       </div>
       <div className="flex items-center justify-center gap-1">
         <div>{message}</div>
-        {word ? <div className="font-bold">{word}</div> : null}
       </div>
       {duration !== undefined && <Timer duration={duration} />}
       {socket && <Canvas socket={socket} readonly={!isPainter} />}

@@ -6,7 +6,7 @@ export default function Error404() {
     <CenterLayout>
       <div className="flex h-full w-full flex-col items-center justify-center gap-4">
         404 | Not Found
-        <Link href="/">Go Home</Link>
+        <Link href="/">메인페이지로 돌아가기</Link>
       </div>
     </CenterLayout>
   );
