@@ -7,19 +7,61 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  amber,
+  black,
+  blue,
+  cyan,
+  emerald,
+  fuchsia,
+  gray,
+  green,
+  indigo,
+  lime,
+  neutral,
+  orange,
+  pink,
+  purple,
+  red,
+  rose,
+  sky,
+  slate,
+  stone,
+  teal,
+  violet,
+  white,
+  yellow,
+  zinc,
+} from "tailwindcss/colors";
 import { useInputNumber } from "../hooks/useInput";
 import Socket from "../socket/Socket";
 import CanvasUtil from "../util/CanvasUtil";
 
 const colors = [
-  "#000000",
-  "#ff3838",
-  "#ffb8b8",
-  "#c56cf0",
-  "#ff9f1a",
-  "#fff200",
-  "#32ff7e",
-  "#7efff5",
+  black,
+  white,
+  slate["500"],
+  gray["500"],
+  zinc["500"],
+  neutral["500"],
+  stone["500"],
+  red["500"],
+  orange["500"],
+  amber["500"],
+  yellow["500"],
+  lime["500"],
+  green["500"],
+  emerald["500"],
+  teal["500"],
+  cyan["500"],
+  sky["500"],
+  blue["500"],
+  indigo["500"],
+  violet["500"],
+  purple["500"],
+  fuchsia["500"],
+  pink["500"],
+  rose["500"],
 ].map((color) => ({
   id: crypto.randomUUID(),
   color,
@@ -178,7 +220,7 @@ export default function Canvas({
           maxValue={15}
           step={1}
         />
-        <div className="flex flex-row gap-2">
+        <div className="flex w-96 flex-row flex-wrap items-center justify-center gap-2">
           {colors.map((data) => (
             <Button
               key={data.id}
