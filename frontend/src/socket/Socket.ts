@@ -99,12 +99,16 @@ export default class Socket {
     return () => this.socket.off(ServerEmitEvent.gameStarted, listener);
   }
 
-  public addHandleLeaderNotify(listener: ({ word }: { word: string }) => void) {
-    this.socket.on(ServerEmitEvent.leaderNotify, listener);
-    return () => this.socket.off(ServerEmitEvent.leaderNotify, listener);
+  public addHandlePainterNotify(
+    listener: ({ word }: { word: string }) => void,
+  ) {
+    this.socket.on(ServerEmitEvent.painterNotify, listener);
+    return () => this.socket.off(ServerEmitEvent.painterNotify, listener);
   }
 
-  public addHandleGameEnded(listener: () => void) {
+  public addHandleGameEnded(
+    listener: ({ winnerId, word }: { winnerId: string; word: string }) => void,
+  ) {
     this.socket.on(ServerEmitEvent.gameEnded, listener);
     return () => this.socket.off(ServerEmitEvent.gameEnded, listener);
   }

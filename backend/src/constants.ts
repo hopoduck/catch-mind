@@ -92,5 +92,5 @@ export const words = [
   'women',
 ];
 
-export const START_WAIT_TIME = 5000 as const;
-export const END_WAIT_TIME = 30000 as const;
+export const START_WAIT_TIME = 3000 as const;
+export const END_WAIT_TIME = 60000 as const;

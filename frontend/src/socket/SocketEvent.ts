@@ -22,7 +22,7 @@ export enum ServerEmitEvent {
   playerUpdate = "playerUpdate",
   gameStarting = "gameStarting",
   gameStarted = "gameStarted",
-  leaderNotify = "leaderNotify",
+  painterNotify = "painterNotify",
   gameEnded = "gameEnded",
 
   skipped = "skipped",

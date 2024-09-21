@@ -84,18 +84,21 @@ export default function Home() {
         setShowConfetti(false);
         setPainterId(id);
       }),
-      socket.addHandleLeaderNotify(({ word }) => {
+      socket.addHandlePainterNotify(({ word }) => {
         setWord(word);
         setIsPainter(true);
         setMessage("You are painter! Draw");
       }),
-      socket.addHandleGameEnded(() => {
+      socket.addHandleGameEnded(({ winnerId, word }) => {
         setWord(undefined);
         setIsPainter(false);
-        setMessage("Game ended");
+        toast.success(`Game ended! Message was: ${word}`, {
+          position: "top-center",
+        });
         setDuration(undefined);
-        setShowConfetti(true);
-        // toast.success("정답은 뭐뭐 였습니다!", { position: "top-center" });
+        if (socket.id === winnerId) {
+          setShowConfetti(true);
+        }
       }),
     ];
 

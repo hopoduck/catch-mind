@@ -20,7 +20,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private startTimeoutId: NodeJS.Timeout;
   private endTimeoutId: NodeJS.Timeout;
   private word: string;
-  private leader: CatchMindUser = null;
+  private painter: CatchMindUser = null;
   private winner: CatchMindUser = null;
   private sockets: CatchMindUser[] = [];
 
@@ -35,7 +35,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
     this.sockets = this.sockets.filter((socket) => socket.id !== client.id);
     this.playerUpdate();
-    if (this.sockets.length <= 1 || this.leader?.id === client.id) {
+    if (this.sockets.length <= 1 || this.painter?.id === client.id) {
       this.endGame();
     }
 
@@ -65,10 +65,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       nickname: client.nickname,
     });
     if (message === this.word) {
-      const winner = this.sockets.find((socket) => socket.id === client.id);
-      winner.points += 10;
-      // TODO: 우승자 찾아서 폭죽이라도..
-      // this.server.to(winner.id).emit(ServerEmitEvent.winner);
+      this.setWinner(client.id);
       this.playerUpdate();
       this.endGame();
     }
@@ -122,7 +119,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (this.sockets.length <= 1) return;
 
     this.inProgress = true;
-    this.leader = this.sockets[Math.floor(Math.random() * this.sockets.length)];
+    this.painter =
+      this.sockets[Math.floor(Math.random() * this.sockets.length)];
     this.word = randomWord();
     this.server.emit(ServerEmitEvent.gameStarting, {
       start: Date.now(),
@@ -130,22 +128,30 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
     this.startTimeoutId = setTimeout(() => {
       this.server.emit(ServerEmitEvent.gameStarted, {
-        id: this.leader.id,
+        id: this.painter.id,
         start: Date.now(),
         end: Date.now() + END_WAIT_TIME,
       });
       this.server
-        .to(this.leader.id)
-        .emit(ServerEmitEvent.leaderNotify, { word: this.word });
+        .to(this.painter.id)
+        .emit(ServerEmitEvent.painterNotify, { word: this.word });
       this.endTimeoutId = setTimeout(() => this.endGame(), END_WAIT_TIME);
     }, START_WAIT_TIME);
     console.log('start game');
   }
 
+  private setWinner(winnerId: string) {
+    this.winner = this.sockets.find((socket) => socket.id === winnerId);
+    if (this.winner) {
+      this.winner.points += 10;
+    }
+  }
+
   private endGame() {
     this.inProgress = false;
     this.server.emit(ServerEmitEvent.gameEnded, {
-      winner: this.winner.id,
+      winnerId: this.winner?.id,
+      word: this.word,
     });
     clearTimeout(this.startTimeoutId);
     clearTimeout(this.endTimeoutId);
@@ -157,7 +163,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private cleanGameData() {
     this.word = undefined;
-    this.leader = undefined;
+    this.painter = undefined;
     this.winner = undefined;
   }
 }
