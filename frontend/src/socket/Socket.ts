@@ -77,7 +77,24 @@ export default class Socket {
     return () => this.socket.off(ServerEmitEvent.playerUpdate, listener);
   }
 
-  public addHandleGameStarted(listener: ({ id }: { id: string }) => void) {
+  public addHandleGameStarting(
+    listener: ({ start, end }: { start: number; end: number }) => void,
+  ) {
+    this.socket.on(ServerEmitEvent.gameStarting, listener);
+    return () => this.socket.off(ServerEmitEvent.gameStarting, listener);
+  }
+
+  public addHandleGameStarted(
+    listener: ({
+      id,
+      start,
+      end,
+    }: {
+      id: string;
+      start: number;
+      end: number;
+    }) => void,
+  ) {
     this.socket.on(ServerEmitEvent.gameStarted, listener);
     return () => this.socket.off(ServerEmitEvent.gameStarted, listener);
   }
@@ -90,11 +107,6 @@ export default class Socket {
   public addHandleGameEnded(listener: () => void) {
     this.socket.on(ServerEmitEvent.gameEnded, listener);
     return () => this.socket.off(ServerEmitEvent.gameEnded, listener);
-  }
-
-  public addHandleGameStarting(listener: () => void) {
-    this.socket.on(ServerEmitEvent.gameStarting, listener);
-    return () => this.socket.off(ServerEmitEvent.gameStarting, listener);
   }
 
   sendMessage(message: string) {

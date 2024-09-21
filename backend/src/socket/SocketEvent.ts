@@ -20,10 +20,10 @@ export enum ServerEmitEvent {
   filled = 'filled',
 
   playerUpdate = 'playerUpdate',
+  gameStarting = 'gameStarting',
   gameStarted = 'gameStarted',
   leaderNotify = 'leaderNotify',
   gameEnded = 'gameEnded',
-  gameStarting = 'gameStarting',
 
   skipped = 'skipped',
 }

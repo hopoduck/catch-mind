@@ -28,7 +28,7 @@ export default function Home() {
   const [word, setWord] = useState<string>();
   const [message, setMessage] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
-  const [startTime, setStartTime] = useState<number>();
+  const [duration, setDuration] = useState<{ start: number; end: number }>();
   const [painterId, setPainterId] = useState<string>();
 
   const addChatData = (data: ChatData) => {
@@ -50,9 +50,8 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const socket = new Socket(
-      sessionStorage.getItem("nickname") ?? "Anonymous",
-    );
+    const nickname = sessionStorage.getItem("nickname") ?? "Anonymous";
+    const socket = new Socket(nickname);
 
     const cleanUps = [
       socket.addHandleNewUser(({ nickname }) => {
@@ -72,15 +71,16 @@ export default function Home() {
       socket.addHandlePlayerUpdate(({ players }) => {
         setPlayers(players);
       }),
-      socket.addHandleGameStarting(() => {
+      socket.addHandleGameStarting(({ start, end }) => {
         setMessage("Game will starting!");
+        setDuration({ start, end });
       }),
-      socket.addHandleGameStarted(({ id }) => {
+      socket.addHandleGameStarted(({ id, start, end }) => {
         setIsPainter(false);
         setChatLog([]);
         setMessage("Game started!");
         setValue("");
-        setStartTime(Date.now());
+        setDuration({ start, end });
         setShowConfetti(false);
         setPainterId(id);
       }),
@@ -93,7 +93,7 @@ export default function Home() {
         setWord(undefined);
         setIsPainter(false);
         setMessage("Game ended");
-        setStartTime(undefined);
+        setDuration(undefined);
         setShowConfetti(true);
         // toast.success("정답은 뭐뭐 였습니다!", { position: "top-center" });
       }),
@@ -136,7 +136,7 @@ export default function Home() {
         <div>{message}</div>
         {word ? <div className="font-bold">{word}</div> : null}
       </div>
-      {startTime !== undefined && <Timer start={startTime} duration={30000} />}
+      {duration !== undefined && <Timer duration={duration} />}
       {socket && <Canvas socket={socket} readonly={!isPainter} />}
       <LeaderBoard players={players} myId={socket?.id} painterId={painterId} />
       <ChatLog list={chatLog} className="rounded-xl p-3" />

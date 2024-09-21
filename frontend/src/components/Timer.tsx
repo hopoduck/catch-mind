@@ -3,11 +3,12 @@ import { Slider } from "@nextui-org/react";
 import { useEffect, useState } from "react";
 
 export default function Timer({
-  start,
-  duration,
+  duration: { start, end },
 }: {
-  readonly start: number;
-  readonly duration: number;
+  readonly duration: {
+    start: number;
+    end: number;
+  };
 }) {
   const [progress, setProgress] = useState(1);
 
@@ -15,7 +16,7 @@ export default function Timer({
     let id: number;
     const updateTimer = () => {
       id = requestAnimationFrame(() => {
-        setProgress(1 - (Date.now() - start) / duration);
+        setProgress(1 - (Date.now() - start) / (end - start));
         updateTimer();
       });
     };
@@ -25,7 +26,7 @@ export default function Timer({
     return () => {
       cancelAnimationFrame(id);
     };
-  }, [duration, start]);
+  }, [end, start]);
 
   return (
     <div className="flex items-center justify-center gap-2">
