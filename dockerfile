@@ -5,7 +5,7 @@ FROM node:20-slim AS frontend-builder
 WORKDIR /usr/src/app
 
 # 3. 패키지 파일 복사
-COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./
+COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./frontend/.npmrc ./
 
 # 4. pnpm 설치
 RUN npm install -g pnpm
