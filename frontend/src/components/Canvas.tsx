@@ -81,11 +81,13 @@ export default function Canvas({
   readonly readonly: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cursorRef = useRef<HTMLDivElement>(null);
   const [canvas, setCanvas] = useState<CanvasUtil>();
   const [action, setAction] = useState<Action>(Action.draw);
   const { value: lineWidth, htmlAttribute } = useInputNumber(1);
   const [colorData, setColorData] = useState<(typeof colors)[0]>(colors[0]);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [cursorVisible, setCursorVisible] = useState(false);
 
   const handleMouseDown: MouseEventHandler<HTMLElement> = (e) => {
     if (!canvas) return;
@@ -115,19 +117,29 @@ export default function Canvas({
   }, [isDrawing, readonly]);
 
   const handleMouseMove: MouseEventHandler<HTMLElement> = (e) => {
+    if (!cursorRef.current) return;
     if (!canvas) return;
+
+    const isErase = action === Action.erase;
+    const cursorSize = isErase ? lineWidth * 2 : lineWidth;
+    const cursor = cursorRef.current;
+    cursor.style.width = cursorSize / canvas.canvasRatio + "px";
+    cursor.style.height = cursorSize / canvas.canvasRatio + "px";
+    cursor.style.top = e.pageY + "px";
+    cursor.style.left = e.pageX + "px";
+
     if (!isDrawing) return;
     if (readonly) return;
 
     e.preventDefault();
 
-    const color = action === Action.erase ? "#ffffff" : colorData.color;
+    const color = isErase ? "#ffffff" : colorData.color;
     socket.sendStrokePath(
       canvas.stroke({
         x: e.nativeEvent.offsetX,
         y: e.nativeEvent.offsetY,
         color,
-        lineWidth,
+        lineWidth: cursorSize,
       }),
     );
   };
@@ -217,11 +229,21 @@ export default function Canvas({
   return (
     <div className="flex h-full w-full flex-row items-center justify-center gap-4 max-lg:flex-col">
       <canvas
-        className="max-h-full max-w-full rounded-2xl border-2 border-sky-300 bg-white shadow"
+        className={[
+          "max-h-full max-w-full rounded-2xl border-2 border-sky-300 bg-white shadow",
+          readonly ? "cursor-default" : "cursor-none",
+        ].join(" ")}
         ref={canvasRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseUp}
+        onMouseEnter={() => {
+          setCursorVisible(true);
+        }}
+        onMouseLeave={() => {
+          setCursorVisible(false);
+          handleMouseUp();
+        }}
+
         // onMouseLeave={handleMouseEnterAndLeave}
         // onMouseEnter={handleMouseEnterAndLeave}
       />
@@ -305,6 +327,15 @@ export default function Canvas({
           </div>
           {/* <div className="absolute left-0 top-0 flex h-full w-full cursor-not-allowed items-center justify-center backdrop-blur"></div> */}
         </div>
+      )}
+      {!readonly && (
+        <div
+          className={[
+            "pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-black shadow-inner shadow-white",
+            cursorVisible ? "" : "hidden",
+          ].join(" ")}
+          ref={cursorRef}
+        ></div>
       )}
     </div>
   );
