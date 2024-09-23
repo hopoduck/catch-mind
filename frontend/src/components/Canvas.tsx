@@ -18,20 +18,15 @@ import {
   green,
   indigo,
   lime,
-  neutral,
   orange,
   pink,
   purple,
   red,
-  rose,
   sky,
-  slate,
-  stone,
   teal,
   violet,
   white,
   yellow,
-  zinc,
 } from "tailwindcss/colors";
 import { useInputNumber } from "../hooks/useInput";
 import Socket from "../socket/Socket";
@@ -40,15 +35,13 @@ import CanvasUtil from "../util/CanvasUtil";
 const colors = [
   black,
   white,
-  slate["500"],
   gray["500"],
-  zinc["500"],
-  neutral["500"],
-  stone["500"],
   red["500"],
   orange["500"],
   amber["500"],
+  "#A0522D",
   yellow["500"],
+  "#FBCEB1",
   lime["500"],
   green["500"],
   emerald["500"],
@@ -61,7 +54,6 @@ const colors = [
   purple["500"],
   fuchsia["500"],
   pink["500"],
-  rose["500"],
 ].map((color) => ({
   id: crypto.randomUUID(),
   color,
@@ -81,11 +73,19 @@ export default function Canvas({
   readonly readonly: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cursorRef = useRef<HTMLDivElement>(null);
   const [canvas, setCanvas] = useState<CanvasUtil>();
   const [action, setAction] = useState<Action>(Action.draw);
-  const { value: lineWidth, htmlAttribute } = useInputNumber(1);
+  const { value: lineWidth, htmlAttribute } = useInputNumber(5);
   const [colorData, setColorData] = useState<(typeof colors)[0]>(colors[0]);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [cursorVisible, setCursorVisible] = useState(false);
+
+  const [isDraw, isFill, isErase] = [
+    action === Action.draw,
+    action === Action.fill,
+    action === Action.erase,
+  ];
 
   const handleMouseDown: MouseEventHandler<HTMLElement> = (e) => {
     if (!canvas) return;
@@ -115,19 +115,28 @@ export default function Canvas({
   }, [isDrawing, readonly]);
 
   const handleMouseMove: MouseEventHandler<HTMLElement> = (e) => {
+    if (!cursorRef.current) return;
     if (!canvas) return;
+
+    const cursorSize = isErase ? lineWidth * 2 : lineWidth;
+    const cursor = cursorRef.current;
+    cursor.style.width = (cursorSize / canvas.canvasRatio).toString() + "px";
+    cursor.style.height = (cursorSize / canvas.canvasRatio).toString() + "px";
+    cursor.style.top = e.pageY.toString() + "px";
+    cursor.style.left = e.pageX.toString() + "px";
+
     if (!isDrawing) return;
     if (readonly) return;
 
     e.preventDefault();
 
-    const color = action === Action.erase ? "#ffffff" : colorData.color;
+    const color = isErase ? "#ffffff" : colorData.color;
     socket.sendStrokePath(
       canvas.stroke({
         x: e.nativeEvent.offsetX,
         y: e.nativeEvent.offsetY,
         color,
-        lineWidth,
+        lineWidth: cursorSize,
       }),
     );
   };
@@ -155,7 +164,7 @@ export default function Canvas({
   const handleColorChange = (data: (typeof colors)[0]) => {
     if (readonly) return;
 
-    if (action === Action.erase) {
+    if (isErase) {
       setAction(Action.draw);
     }
     setColorData(data);
@@ -217,11 +226,21 @@ export default function Canvas({
   return (
     <div className="flex h-full w-full flex-row items-center justify-center gap-4 max-lg:flex-col">
       <canvas
-        className="max-h-full max-w-full rounded-2xl border-2 border-sky-300 bg-white shadow"
+        className={[
+          "max-h-full max-w-full rounded-2xl border-2 border-sky-300 bg-white shadow",
+          readonly ? "cursor-default" : "cursor-none",
+        ].join(" ")}
         ref={canvasRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseUp}
+        onMouseEnter={() => {
+          setCursorVisible(true);
+        }}
+        onMouseLeave={() => {
+          setCursorVisible(false);
+          handleMouseUp();
+        }}
+
         // onMouseLeave={handleMouseEnterAndLeave}
         // onMouseEnter={handleMouseEnterAndLeave}
       />
@@ -232,7 +251,7 @@ export default function Canvas({
             <Slider
               {...htmlAttribute}
               minValue={1}
-              maxValue={15}
+              maxValue={30}
               step={1}
               showTooltip
               aria-label="펜 굵기"
@@ -240,6 +259,9 @@ export default function Canvas({
                 { label: "5", value: 5 },
                 { label: "10", value: 10 },
                 { label: "15", value: 15 },
+                { label: "20", value: 20 },
+                { label: "25", value: 25 },
+                { label: "30", value: 30 },
               ]}
             />
           </div>
@@ -266,7 +288,7 @@ export default function Canvas({
           <div className="flex justify-between">
             <ButtonGroup>
               <Button
-                color={action === Action.draw ? "primary" : "default"}
+                color={isDraw ? "primary" : "default"}
                 onClick={() => {
                   setAction(Action.draw);
                 }}
@@ -274,7 +296,7 @@ export default function Canvas({
                 <Icon icon="solar:pallete-2-bold-duotone" className="text-xl" />
               </Button>
               <Button
-                color={action === Action.fill ? "primary" : "default"}
+                color={isFill ? "primary" : "default"}
                 onClick={() => {
                   setAction(Action.fill);
                 }}
@@ -285,7 +307,7 @@ export default function Canvas({
                 />
               </Button>
               <Button
-                color={action === Action.erase ? "primary" : "default"}
+                color={isErase ? "primary" : "default"}
                 onClick={() => {
                   setAction(Action.erase);
                 }}
@@ -305,6 +327,19 @@ export default function Canvas({
           </div>
           {/* <div className="absolute left-0 top-0 flex h-full w-full cursor-not-allowed items-center justify-center backdrop-blur"></div> */}
         </div>
+      )}
+      {!readonly && (
+        <div
+          className={[
+            "pointer-events-none absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full",
+            cursorVisible ? "" : "hidden",
+            "border-2 shadow-inner shadow-gray-400 drop-shadow",
+          ].join(" ")}
+          ref={cursorRef}
+          style={{
+            borderColor: colorData.color,
+          }}
+        ></div>
       )}
     </div>
   );

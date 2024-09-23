@@ -14,14 +14,16 @@ export default class CanvasUtil {
     this.context = context;
   }
 
+  public get canvasRatio() {
+    return CanvasUtil.SIZE / this.canvas.clientWidth;
+  }
+
   public localToCanvas<T extends number[]>(...numbers: T): T {
-    const ratio = CanvasUtil.SIZE / this.canvas.clientWidth;
-    return numbers.map((x) => x * ratio) as T;
+    return numbers.map((x) => x * this.canvasRatio) as T;
   }
 
   public canvasToLocal<T extends number[]>(...numbers: T): T {
-    const ratio = CanvasUtil.SIZE / this.canvas.clientWidth;
-    return numbers.map((x) => x / ratio) as T;
+    return numbers.map((x) => x / this.canvasRatio) as T;
   }
 
   public start(x: number, y: number) {
