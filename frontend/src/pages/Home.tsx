@@ -24,7 +24,7 @@ export default function Home() {
   const [chatLog, setChatLog] = useState<ChatData[]>([]);
   const [socket, setSocket] = useState<Socket>();
   const [players, setPlayers] = useState<Player[]>([]);
-  const [isPainter, setIsPainter] = useState(true);
+  const [isPainter, setIsPainter] = useState(false);
   const [message, setMessage] = useState(
     "사용자를 기다리고 있습니다... 2명 이상 접속 시 게임이 시작됩니다.",
   );
