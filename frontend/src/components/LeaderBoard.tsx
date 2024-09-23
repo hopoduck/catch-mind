@@ -1,5 +1,6 @@
 import { Icon } from "@iconify-icon/react/dist/iconify.mjs";
 import { Badge, Chip } from "@nextui-org/react";
+import { Player } from "../local";
 
 export default function LeaderBoard({
   players,
