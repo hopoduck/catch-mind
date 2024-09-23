@@ -1,4 +1,5 @@
 import { io } from "socket.io-client";
+import { Player } from "../local";
 import { ClientEmitEvent, ServerEmitEvent } from "./SocketEvent";
 
 export default class Socket {
@@ -107,7 +108,15 @@ export default class Socket {
   }
 
   public addHandleGameEnded(
-    listener: ({ winnerId, word }: { winnerId: string; word: string }) => void,
+    listener: ({
+      winnerId,
+      winnerNickname,
+      word,
+    }: {
+      winnerId: string;
+      winnerNickname: string;
+      word: string;
+    }) => void,
   ) {
     this.socket.on(ServerEmitEvent.gameEnded, listener);
     return () => this.socket.off(ServerEmitEvent.gameEnded, listener);

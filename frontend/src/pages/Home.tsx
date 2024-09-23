@@ -5,10 +5,11 @@ import Confetti from "react-confetti-boom";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Canvas from "../components/Canvas";
-import ChatLog from "../components/ChatLog";
+import ChatLog, { SystemChatEventType } from "../components/ChatLog";
 import LeaderBoard from "../components/LeaderBoard";
 import Timer from "../components/Timer";
 import { useInput } from "../hooks/useInput";
+import { ChatData, Player } from "../local";
 import Socket from "../socket/Socket";
 
 export default function Home() {
@@ -32,8 +33,8 @@ export default function Home() {
   const [duration, setDuration] = useState<{ start: number; end: number }>();
   const [painterId, setPainterId] = useState<string>();
 
-  const addChatData = (data: ChatData) => {
-    setChatLog((chatLog) => [...chatLog, data]);
+  const addChatData = (data: Omit<ChatData, "id">) => {
+    setChatLog((chatLog) => [...chatLog, { id: crypto.randomUUID(), ...data }]);
   };
 
   const handleKeydown: KeyboardEventHandler<HTMLInputElement> = (e) => {
@@ -44,7 +45,6 @@ export default function Home() {
     e.preventDefault();
     socket.sendMessage(value);
     addChatData({
-      id: crypto.randomUUID(),
       message: value,
     });
     setValue("");
@@ -63,7 +63,6 @@ export default function Home() {
       }),
       socket.addHandleNewMessage(({ message, nickname }) => {
         addChatData({
-          id: crypto.randomUUID(),
           message,
           nickname,
         });
@@ -77,7 +76,9 @@ export default function Home() {
       }),
       socket.addHandleGameStarted(({ id, start, end }) => {
         setIsPainter(false);
-        setChatLog([]);
+        addChatData({
+          system: SystemChatEventType.gameEnded,
+        });
         setMessage("게임이 시작되었습니다. 그림을 보고 정답을 입력하세요.");
         setValue("");
         setDuration({ start, end });
@@ -88,10 +89,12 @@ export default function Home() {
         setIsPainter(true);
         setMessage(`그릴 차례입니다. 단어는 "${word}"입니다.`);
       }),
-      socket.addHandleGameEnded(({ winnerId, word }) => {
+      socket.addHandleGameEnded(({ winnerId, winnerNickname, word }) => {
         setIsPainter(false);
-        toast.success(`게임이 종료되었습니다! 단어는 "${word}"였습니다.`, {
-          position: "top-center",
+        addChatData({
+          message: word,
+          nickname: winnerNickname,
+          system: SystemChatEventType.winner,
         });
         setDuration(undefined);
         if (socket.id === winnerId) {
@@ -139,7 +142,7 @@ export default function Home() {
       {duration !== undefined && <Timer duration={duration} />}
       {socket && <Canvas socket={socket} readonly={!isPainter} />}
       <LeaderBoard players={players} myId={socket?.id} painterId={painterId} />
-      <ChatLog list={chatLog} className="rounded-xl p-3" />
+      <ChatLog list={chatLog} className="max-h-60 rounded-xl p-3" />
       <Input
         {...htmlAttribute}
         placeholder="정답을 입력하세요"

@@ -118,7 +118,7 @@ export default function Canvas({
     if (!cursorRef.current) return;
     if (!canvas) return;
 
-    const cursorSize = isErase ? lineWidth * 2 : lineWidth;
+    const cursorSize = isErase ? lineWidth * 1.5 : lineWidth;
     const cursor = cursorRef.current;
     cursor.style.width = (cursorSize / canvas.canvasRatio).toString() + "px";
     cursor.style.height = (cursorSize / canvas.canvasRatio).toString() + "px";
@@ -224,7 +224,7 @@ export default function Canvas({
   }, [handleMouseUp]);
 
   return (
-    <div className="flex h-full w-full flex-row items-center justify-center gap-4 max-lg:flex-col">
+    <div className="flex h-full w-full flex-row items-center justify-center gap-4 max-xl:flex-col">
       <canvas
         className={[
           "max-h-full max-w-full rounded-2xl border-2 border-sky-300 bg-white shadow",

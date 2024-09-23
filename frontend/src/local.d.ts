@@ -1,7 +1,10 @@
+import { SystemChatEventType } from "./components/ChatLog";
+
 interface ChatData {
   id: string;
   nickname?: string;
-  message: string;
+  message?: string;
+  system?: SystemChatEventType;
 }
 
 interface Player {

@@ -151,6 +151,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.inProgress = false;
     this.server.emit(ServerEmitEvent.gameEnded, {
       winnerId: this.winner?.id,
+      winnerNickname: this.winner?.nickname,
       word: this.word,
     });
     clearTimeout(this.startTimeoutId);
