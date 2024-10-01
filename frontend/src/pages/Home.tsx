@@ -1,10 +1,11 @@
 import { Icon } from "@iconify-icon/react/dist/iconify.mjs";
-import { Button, Input } from "@nextui-org/react";
+import { Button, Input, useDisclosure } from "@nextui-org/react";
 import { KeyboardEventHandler, useEffect, useState } from "react";
 import Confetti from "react-confetti-boom";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Canvas from "../components/Canvas";
+import ChangeTimeout from "../components/ChangeTimeout";
 import ChatLog, { SystemChatEventType } from "../components/ChatLog";
 import LeaderBoard from "../components/LeaderBoard";
 import Timer from "../components/Timer";
@@ -14,6 +15,16 @@ import Socket from "../socket/Socket";
 
 export default function Home() {
   const navigate = useNavigate();
+  const {
+    onOpen: formOpen,
+    isOpen: formIsOpen,
+    onOpenChange: formOpenChange,
+  } = useDisclosure();
+  const {
+    onOpen: requestOpen,
+    isOpen: requestIsOpen,
+    onOpenChange: requestOpenChange,
+  } = useDisclosure();
 
   useEffect(() => {
     if (sessionStorage.getItem("nickname") === null) {
@@ -32,6 +43,7 @@ export default function Home() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [duration, setDuration] = useState<{ start: number; end: number }>();
   const [painterId, setPainterId] = useState<string>();
+  const [time, setTime] = useState(60);
 
   const addChatData = (data: Omit<ChatData, "id">) => {
     setChatLog((chatLog) => [...chatLog, { id: crypto.randomUUID(), ...data }]);
@@ -101,6 +113,18 @@ export default function Home() {
           setShowConfetti(true);
         }
       }),
+      socket.addHandleChangeTimeoutRequested(({ time }) => {
+        setTime(time);
+        requestOpen();
+      }),
+      socket.addHandleChangeTimeoutResolved(({ time }) => {
+        toast.success(
+          `유저의 게임 진행시간이 과반 이상 찬성으로 게임 진행시간이 ${time.toString()}초로 변경되었습니다.`,
+        );
+      }),
+      socket.addHandleChangeTimeoutRejected(() => {
+        toast.error(`유저의 게임 진행시간이 과반 이상 거절되었습니다.`);
+      }),
     ];
 
     setSocket(socket);
@@ -109,11 +133,15 @@ export default function Home() {
       socket.disconnect();
       cleanUps.forEach((cleanUp) => cleanUp());
     };
-  }, [setValue]);
+  }, [requestOpen, setValue]);
 
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex items-center justify-end gap-1">
+        <Button className="flex gap-1" color="secondary" onClick={formOpen}>
+          <Icon icon="solar:clock-circle-bold" />
+          시간 변경
+        </Button>
         {isPainter && (
           <Button
             className="flex gap-1"
@@ -150,6 +178,14 @@ export default function Home() {
         disabled={isPainter}
       />
       {showConfetti && <Confetti mode="boom" />}
+      <ChangeTimeout
+        time={time}
+        formIsOpen={formIsOpen}
+        formOpenChange={formOpenChange}
+        requestIsOpen={requestIsOpen}
+        requestOpenChange={requestOpenChange}
+        socket={socket}
+      />
     </div>
   );
 }

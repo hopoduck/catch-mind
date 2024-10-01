@@ -122,6 +122,28 @@ export default class Socket {
     return () => this.socket.off(ServerEmitEvent.gameEnded, listener);
   }
 
+  public addHandleChangeTimeoutRequested(
+    listener: ({ time }: { time: number }) => void,
+  ) {
+    this.socket.on(ServerEmitEvent.changeTimeoutRequested, listener);
+    return () =>
+      this.socket.off(ServerEmitEvent.changeTimeoutRequested, listener);
+  }
+
+  public addHandleChangeTimeoutResolved(
+    listener: ({ time }: { time: number }) => void,
+  ) {
+    this.socket.on(ServerEmitEvent.changeTimeoutResolved, listener);
+    return () =>
+      this.socket.off(ServerEmitEvent.changeTimeoutResolved, listener);
+  }
+
+  public addHandleChangeTimeoutRejected(listener: () => void) {
+    this.socket.on(ServerEmitEvent.changeTimeoutRejected, listener);
+    return () =>
+      this.socket.off(ServerEmitEvent.changeTimeoutRejected, listener);
+  }
+
   sendMessage(message: string) {
     this.socket.emit(ClientEmitEvent.sendMessage, { message });
   }
@@ -150,6 +172,18 @@ export default class Socket {
 
   sendSkip() {
     this.socket.emit(ClientEmitEvent.skip);
+  }
+
+  sendChangeTimeoutRequest(time: number) {
+    this.socket.emit(ClientEmitEvent.changeTimeoutRequest, { time });
+  }
+
+  sendChangeTimeoutAgree() {
+    this.socket.emit(ClientEmitEvent.changeTimeoutAgree);
+  }
+
+  sendChangeTimeoutDisagree() {
+    this.socket.emit(ClientEmitEvent.changeTimeoutDisagree);
   }
 
   disconnect() {

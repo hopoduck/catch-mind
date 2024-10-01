@@ -8,6 +8,9 @@ export enum ClientEmitEvent {
   fill = 'fill',
 
   skip = 'skip',
+  changeTimeoutRequest = 'changeTimeoutRequest',
+  changeTimeoutAgree = 'changeTimeoutAgree',
+  changeTimeoutDisagree = 'changeTimeoutDisagree',
 }
 
 export enum ServerEmitEvent {
@@ -26,4 +29,7 @@ export enum ServerEmitEvent {
   gameEnded = 'gameEnded',
 
   skipped = 'skipped',
+  changeTimeoutRequested = 'changeTimeoutRequested',
+  changeTimeoutResolved = 'changeTimeoutResolved',
+  changeTimeoutRejected = 'changeTimeoutRejected',
 }
