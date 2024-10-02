@@ -65,6 +65,15 @@ export default function Home() {
   useEffect(() => {
     const nickname = sessionStorage.getItem("nickname") ?? "Anonymous";
     const socket = new Socket(nickname);
+    setSocket(socket);
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
 
     const cleanUps = [
       socket.addHandleNewUser(({ nickname }) => {
@@ -127,13 +136,10 @@ export default function Home() {
       }),
     ];
 
-    setSocket(socket);
-
     return () => {
-      socket.disconnect();
       cleanUps.forEach((cleanUp) => cleanUp());
     };
-  }, [requestOpen, setValue]);
+  }, [requestOpen, setValue, socket]);
 
   return (
     <div className="flex flex-col gap-4 p-4">
