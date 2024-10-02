@@ -162,6 +162,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private summarizeChangeTimeout() {
+    if (!this.changeTimeoutRequest) return;
     const { agree, disagree, time, timeoutId } = this.changeTimeoutRequest;
     clearTimeout(timeoutId);
     if (agree.size >= disagree.size) {
@@ -244,6 +245,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log('perfectClearGameData');
     this.wordHistory.clear();
     this.gameTimeout = END_WAIT_TIME;
+    if (this.changeTimeoutRequest.timeoutId) {
+      clearTimeout(this.changeTimeoutRequest.timeoutId);
+    }
     this.changeTimeoutRequest = undefined;
     this.cleanGameData();
   }
