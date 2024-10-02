@@ -245,7 +245,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log('perfectClearGameData');
     this.wordHistory.clear();
     this.gameTimeout = END_WAIT_TIME;
-    if (this.changeTimeoutRequest.timeoutId) {
+    if (this.changeTimeoutRequest?.timeoutId) {
       clearTimeout(this.changeTimeoutRequest.timeoutId);
     }
     this.changeTimeoutRequest = undefined;
