@@ -192,7 +192,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     while (true) {
       this.word = randomWord();
-      if (!this.wordHistory.has(this.word)) break;
+      if (!this.wordHistory.has(this.word)) {
+        this.wordHistory.add(this.word);
+        break;
+      }
     }
 
     this.server.emit(ServerEmitEvent.gameStarting, {
