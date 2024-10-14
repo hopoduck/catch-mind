@@ -11,22 +11,19 @@ import { randomWord } from 'src/util';
 import { CatchMindUser } from './socket';
 import { ClientEmitEvent, ServerEmitEvent } from './SocketEvent';
 
-@WebSocketGateway({ transports: ['websocket'] })
-export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer()
-  public readonly server: Server;
-  private readonly wordHistory = new Set<string>();
+interface GameRoomInfo {
+  wordHistory: Set<string>;
 
-  private inProgress = false;
-  private startTimeoutId: NodeJS.Timeout;
-  private endTimeoutId: NodeJS.Timeout;
-  private word: string;
-  private painter: CatchMindUser = null;
-  private winner: CatchMindUser = null;
-  private sockets: CatchMindUser[] = [];
+  inProgress: boolean;
+  startTimeoutId: NodeJS.Timeout;
+  endTimeoutId: NodeJS.Timeout;
+  word: string;
+  painter: CatchMindUser;
+  winner: CatchMindUser;
+  sockets: CatchMindUser[];
 
-  private gameTimeout: number = END_WAIT_TIME;
-  private changeTimeoutRequest:
+  gameTimeout: number;
+  changeTimeoutRequest:
     | {
         currentClientCount: number;
         time: number;
@@ -34,7 +31,15 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
         disagree: Set<string>;
         timeoutId: NodeJS.Timeout;
       }
-    | undefined = undefined;
+    | undefined;
+}
+
+@WebSocketGateway({ transports: ['websocket'] })
+export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  @WebSocketServer()
+  public readonly server: Server;
+
+  private readonly roomContext: Record<string, GameRoomInfo> = {};
 
   handleConnection(client: Socket) {
     client.nickname ??= 'Anonymous';
@@ -42,45 +47,63 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
-    client.broadcast.emit(ServerEmitEvent.disconnected, {
+    client.broadcast.to(client.roomId).emit(ServerEmitEvent.disconnected, {
       nickname: client.nickname,
     });
-    this.sockets = this.sockets.filter((socket) => socket.id !== client.id);
-    this.playerUpdate();
-    if (this.sockets.length <= 1 || this.painter?.id === client.id) {
-      this.endGame();
-      this.perfectlyClearGameData();
+    this.roomContext[client.roomId].sockets = this.roomContext[
+      client.roomId
+    ].sockets.filter((socket) => socket.id !== client.id);
+    this.playerUpdate(client.roomId);
+    if (
+      this.roomContext[client.roomId].sockets.length <= 1 ||
+      this.roomContext[client.roomId].painter?.id === client.id
+    ) {
+      this.endGame(client.roomId);
+      this.perfectlyClearGameData(client.roomId);
     }
 
-    console.log('disconnected!!!', client.id, this.sockets);
+    console.log(
+      'disconnected!!!',
+      client.id,
+      this.roomContext[client.roomId].sockets,
+    );
   }
 
   @SubscribeMessage(ClientEmitEvent.setNickname)
-  handleSetNickname(client: Socket, { nickname }: { nickname: string }) {
+  handleSetNickname(
+    client: Socket,
+    { roomId, nickname }: { roomId: string; nickname: string },
+  ) {
+    this.initGameRoomInfo(roomId);
+
+    client.roomId = roomId;
     client.nickname = nickname;
-    client.broadcast.emit(ServerEmitEvent.newUser, { nickname });
-    this.sockets.push({
+    client.broadcast.to(roomId).emit(ServerEmitEvent.newUser, { nickname });
+    this.roomContext[roomId].sockets.push({
       id: client.id,
       nickname,
       points: 0,
     });
-    this.playerUpdate();
-    if (this.sockets.length >= 2) {
-      this.startGame();
+    this.playerUpdate(client.roomId);
+    if (this.roomContext[roomId].sockets.length >= 2) {
+      this.startGame(client.roomId);
     }
     console.log('set new nickname!', nickname);
   }
 
   @SubscribeMessage(ClientEmitEvent.sendMessage)
   handleSendMessage(client: Socket, { message }: { message: string }) {
-    client.broadcast.emit(ServerEmitEvent.newMessage, {
+    client.broadcast.to(client.roomId).emit(ServerEmitEvent.newMessage, {
       message,
       nickname: client.nickname,
     });
-    if (message === this.word) {
-      this.setWinner(client.id);
-      this.playerUpdate();
-      this.endGame();
+    if (message === this.roomContext[client.roomId].word) {
+      this.setWinner({
+        roomId: client.roomId,
+        winnerId: client.id,
+      });
+      this.playerUpdate(client.roomId);
+      this.endGame(client.roomId);
     }
 
     console.log('new message!', message);
@@ -89,7 +112,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // ------------- Canvas -------------
   @SubscribeMessage(ClientEmitEvent.beginPath)
   handleBeginPath(client: Socket, { x, y }: { x: number; y: number }) {
-    client.broadcast.emit(ServerEmitEvent.beganPath, { x, y });
+    client.broadcast
+      .to(client.roomId)
+      .emit(ServerEmitEvent.beganPath, { x, y });
     console.log('beginPath', x, y);
   }
 
@@ -103,7 +128,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       lineWidth,
     }: { x: number; y: number; color: string; lineWidth: number },
   ) {
-    client.broadcast.emit(ServerEmitEvent.strokedPath, {
+    client.broadcast.to(client.roomId).emit(ServerEmitEvent.strokedPath, {
       x,
       y,
       color,
@@ -114,144 +139,187 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage(ClientEmitEvent.fill)
   handleFilled(client: Socket, { color }: { color: string }) {
-    client.broadcast.emit(ServerEmitEvent.filled, { color });
+    client.broadcast.to(client.roomId).emit(ServerEmitEvent.filled, { color });
     console.log('filled', color);
   }
 
   @SubscribeMessage(ClientEmitEvent.skip)
-  handleSkipped() {
-    this.endGame();
+  handleSkipped(client: Socket) {
+    this.endGame(client.roomId);
   }
 
   @SubscribeMessage(ClientEmitEvent.changeTimeoutRequest)
   handleChangeTimeout(client: Socket, { time }: { time: number }) {
-    if (!this.changeTimeoutRequest) {
+    if (!this.roomContext[client.roomId].changeTimeoutRequest) {
       const timeoutId = setTimeout(() => {
-        this.summarizeChangeTimeout();
+        this.summarizeChangeTimeout(client.roomId);
       }, 30000);
-      this.changeTimeoutRequest = {
-        currentClientCount: this.sockets.length,
+      this.roomContext[client.roomId].changeTimeoutRequest = {
+        currentClientCount: this.roomContext[client.roomId].sockets.length,
         time,
         agree: new Set<string>(),
         disagree: new Set<string>(),
         timeoutId,
       };
-      this.changeTimeoutRequest.agree.add(client.id);
-      client.broadcast.emit(ServerEmitEvent.changeTimeoutRequested, { time });
+      this.roomContext[client.roomId].changeTimeoutRequest.agree.add(client.id);
+      client.broadcast
+        .to(client.roomId)
+        .emit(ServerEmitEvent.changeTimeoutRequested, { time });
     }
   }
 
   @SubscribeMessage(ClientEmitEvent.changeTimeoutAgree)
   handleChangeTimeoutAgree(client: Socket) {
-    if (!this.changeTimeoutRequest) return;
-    this.changeTimeoutRequest.agree.add(client.id);
-    const { currentClientCount, agree, disagree } = this.changeTimeoutRequest;
+    if (!this.roomContext[client.roomId].changeTimeoutRequest) return;
+    this.roomContext[client.roomId].changeTimeoutRequest.agree.add(client.id);
+    const { currentClientCount, agree, disagree } =
+      this.roomContext[client.roomId].changeTimeoutRequest;
     if (currentClientCount === agree.size + disagree.size) {
-      this.summarizeChangeTimeout();
+      this.summarizeChangeTimeout(client.roomId);
     }
   }
 
   @SubscribeMessage(ClientEmitEvent.changeTimeoutDisagree)
   handleChangeTimeoutDisagree(client: Socket) {
-    if (!this.changeTimeoutRequest) return;
-    this.changeTimeoutRequest.disagree.add(client.id);
-    const { currentClientCount, agree, disagree } = this.changeTimeoutRequest;
+    if (!this.roomContext[client.roomId].changeTimeoutRequest) return;
+    this.roomContext[client.roomId].changeTimeoutRequest.disagree.add(
+      client.id,
+    );
+    const { currentClientCount, agree, disagree } =
+      this.roomContext[client.roomId].changeTimeoutRequest;
     if (currentClientCount === agree.size + disagree.size) {
-      this.summarizeChangeTimeout();
+      this.summarizeChangeTimeout(client.roomId);
     }
   }
 
-  private summarizeChangeTimeout() {
-    if (!this.changeTimeoutRequest) return;
-    const { agree, disagree, time, timeoutId } = this.changeTimeoutRequest;
+  private summarizeChangeTimeout(roomId: string) {
+    if (!this.roomContext[roomId].changeTimeoutRequest) return;
+    const { agree, disagree, time, timeoutId } =
+      this.roomContext[roomId].changeTimeoutRequest;
     clearTimeout(timeoutId);
     if (agree.size >= disagree.size) {
-      this.gameTimeout = time * 1000;
-      this.server.emit(ServerEmitEvent.changeTimeoutResolved, { time });
+      this.roomContext[roomId].gameTimeout = time * 1000;
+      this.server
+        .to(roomId)
+        .emit(ServerEmitEvent.changeTimeoutResolved, { time });
     } else {
-      this.server.emit(ServerEmitEvent.changeTimeoutRejected);
+      this.server.to(roomId).emit(ServerEmitEvent.changeTimeoutRejected);
     }
-    this.changeTimeoutRequest = undefined;
+    this.roomContext[roomId].changeTimeoutRequest = undefined;
   }
 
-  private playerUpdate() {
-    this.server.emit(ServerEmitEvent.playerUpdate, { players: this.sockets });
+  private playerUpdate(roomId: string) {
+    this.server.to(roomId).emit(ServerEmitEvent.playerUpdate, {
+      players: this.roomContext[roomId].sockets,
+    });
   }
 
-  private startGame() {
-    if (this.inProgress) return;
-    if (this.sockets.length <= 1) return;
+  private initGameRoomInfo(roomId: string) {
+    this.roomContext[roomId] ??= {
+      wordHistory: new Set<string>(),
+      inProgress: false,
+      startTimeoutId: undefined,
+      endTimeoutId: undefined,
+      word: undefined,
+      painter: null,
+      winner: null,
+      sockets: [],
+      gameTimeout: END_WAIT_TIME,
+      changeTimeoutRequest: undefined,
+    };
+  }
 
-    this.inProgress = true;
-    this.painter =
-      this.sockets[Math.floor(Math.random() * this.sockets.length)];
+  private startGame(roomId: string) {
+    if (this.roomContext[roomId].inProgress) return;
+    if (this.roomContext[roomId].sockets.length <= 1) return;
 
-    if (this.wordHistory.size >= words.length) {
-      this.wordHistory.clear();
+    this.roomContext[roomId].inProgress = true;
+    this.roomContext[roomId].painter =
+      this.roomContext[roomId].sockets[
+        Math.floor(Math.random() * this.roomContext[roomId].sockets.length)
+      ];
+
+    if (this.roomContext[roomId].wordHistory.size >= words.length) {
+      this.roomContext[roomId].wordHistory.clear();
     }
 
     while (true) {
-      this.word = randomWord();
-      if (!this.wordHistory.has(this.word)) {
-        this.wordHistory.add(this.word);
+      this.roomContext[roomId].word = randomWord();
+      if (
+        !this.roomContext[roomId].wordHistory.has(this.roomContext[roomId].word)
+      ) {
+        this.roomContext[roomId].wordHistory.add(this.roomContext[roomId].word);
         break;
       }
     }
 
-    this.server.emit(ServerEmitEvent.gameStarting, {
+    this.server.to(roomId).emit(ServerEmitEvent.gameStarting, {
       start: Date.now(),
       end: Date.now() + START_WAIT_TIME,
     });
-    this.startTimeoutId = setTimeout(() => {
-      this.server.emit(ServerEmitEvent.gameStarted, {
-        id: this.painter.id,
+    this.roomContext[roomId].startTimeoutId = setTimeout(() => {
+      this.server.to(roomId).emit(ServerEmitEvent.gameStarted, {
+        id: this.roomContext[roomId].painter.id,
         start: Date.now(),
-        end: Date.now() + this.gameTimeout,
+        end: Date.now() + this.roomContext[roomId].gameTimeout,
       });
       this.server
-        .to(this.painter.id)
-        .emit(ServerEmitEvent.painterNotify, { word: this.word });
-      this.endTimeoutId = setTimeout(() => this.endGame(), this.gameTimeout);
+        .to(this.roomContext[roomId].painter.id)
+        .emit(ServerEmitEvent.painterNotify, {
+          word: this.roomContext[roomId].word,
+        });
+      this.roomContext[roomId].endTimeoutId = setTimeout(
+        () => this.endGame(roomId),
+        this.roomContext[roomId].gameTimeout,
+      );
     }, START_WAIT_TIME);
     console.log('start game');
   }
 
-  private setWinner(winnerId: string) {
-    this.winner = this.sockets.find((socket) => socket.id === winnerId);
-    if (this.winner) {
-      this.winner.points += 10;
+  private setWinner({
+    roomId,
+    winnerId,
+  }: {
+    roomId: string;
+    winnerId: string;
+  }) {
+    this.roomContext[roomId].winner = this.roomContext[roomId].sockets.find(
+      (socket) => socket.id === winnerId,
+    );
+    if (this.roomContext[roomId].winner) {
+      this.roomContext[roomId].winner.points += 10;
     }
   }
 
-  private endGame() {
-    this.inProgress = false;
-    this.server.emit(ServerEmitEvent.gameEnded, {
-      winnerId: this.winner?.id,
-      winnerNickname: this.winner?.nickname,
-      word: this.word,
+  private endGame(roomId: string) {
+    this.roomContext[roomId].inProgress = false;
+    this.server.to(roomId).emit(ServerEmitEvent.gameEnded, {
+      winnerId: this.roomContext[roomId].winner?.id,
+      winnerNickname: this.roomContext[roomId].winner?.nickname,
+      word: this.roomContext[roomId].word,
     });
-    clearTimeout(this.startTimeoutId);
-    clearTimeout(this.endTimeoutId);
-    this.cleanGameData();
+    clearTimeout(this.roomContext[roomId].startTimeoutId);
+    clearTimeout(this.roomContext[roomId].endTimeoutId);
+    this.cleanGameData(roomId);
     console.log('gameEnded');
 
-    this.startGame();
+    this.startGame(roomId);
   }
 
-  private cleanGameData() {
-    this.word = undefined;
-    this.painter = undefined;
-    this.winner = undefined;
+  private cleanGameData(roomId: string) {
+    this.roomContext[roomId].word = undefined;
+    this.roomContext[roomId].painter = undefined;
+    this.roomContext[roomId].winner = undefined;
   }
 
-  private perfectlyClearGameData() {
+  private perfectlyClearGameData(roomId: string) {
     console.log('perfectClearGameData');
-    this.wordHistory.clear();
-    this.gameTimeout = END_WAIT_TIME;
-    if (this.changeTimeoutRequest?.timeoutId) {
-      clearTimeout(this.changeTimeoutRequest.timeoutId);
+    this.roomContext[roomId].wordHistory.clear();
+    this.roomContext[roomId].gameTimeout = END_WAIT_TIME;
+    if (this.roomContext[roomId].changeTimeoutRequest?.timeoutId) {
+      clearTimeout(this.roomContext[roomId].changeTimeoutRequest.timeoutId);
     }
-    this.changeTimeoutRequest = undefined;
-    this.cleanGameData();
+    this.roomContext[roomId].changeTimeoutRequest = undefined;
+    this.cleanGameData(roomId);
   }
 }
