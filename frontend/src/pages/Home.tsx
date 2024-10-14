@@ -9,6 +9,7 @@ import ChangeTimeout from "../components/ChangeTimeout";
 import ChatLog, { SystemChatEventType } from "../components/ChatLog";
 import LeaderBoard from "../components/LeaderBoard";
 import Timer from "../components/Timer";
+import Toolbox from "../components/Toolbox";
 import { useInput } from "../hooks/useInput";
 import { ChatData, Player } from "../local";
 import Socket from "../socket/Socket";
@@ -143,7 +144,7 @@ export default function Home() {
   }, [requestOpen, setValue, socket]);
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col justify-center gap-4 p-4">
       <div className="flex items-center justify-end gap-1">
         <Button className="flex gap-1" color="secondary" onClick={formOpen}>
           <Icon icon="solar:clock-circle-bold" />
@@ -174,16 +175,27 @@ export default function Home() {
       <div className="flex items-center justify-center gap-1">
         <div>{message}</div>
       </div>
-      {duration !== undefined && <Timer duration={duration} />}
-      {socket && <Canvas socket={socket} readonly={!isPainter} />}
-      <LeaderBoard players={players} myId={socket?.id} painterId={painterId} />
-      <ChatLog list={chatLog} className="max-h-60 rounded-xl p-3" />
-      <Input
-        {...htmlAttribute}
-        placeholder="정답을 입력하세요"
-        onKeyDown={handleKeydown}
-        disabled={isPainter}
-      />
+      <div className="flex flex-row items-center justify-center gap-4 max-[700px]:flex-col">
+        <div className="flex flex-col gap-4">
+          {duration !== undefined && <Timer duration={duration} />}
+          {socket && <Canvas socket={socket} readonly={!isPainter} />}
+        </div>
+        <div className="flex w-full max-w-[700px] flex-col items-center gap-4 max-[700px]:h-full">
+          {socket && <Toolbox socket={socket} readonly={!isPainter} />}
+          <LeaderBoard
+            players={players}
+            myId={socket?.id}
+            painterId={painterId}
+          />
+          <ChatLog list={chatLog} className="max-h-60 w-full rounded-xl p-3" />
+          <Input
+            {...htmlAttribute}
+            placeholder="정답을 입력하세요"
+            onKeyDown={handleKeydown}
+            disabled={isPainter}
+          />
+        </div>
+      </div>
       {showConfetti && <Confetti mode="boom" />}
       <ChangeTimeout
         time={time}
