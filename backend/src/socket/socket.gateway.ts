@@ -47,26 +47,21 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
+    const context = this.loadContext(client);
     client.broadcast.to(client.roomId).emit(ServerEmitEvent.disconnected, {
       nickname: client.nickname,
     });
-    this.roomContext[client.roomId].sockets = this.roomContext[
-      client.roomId
-    ].sockets.filter((socket) => socket.id !== client.id);
+    if (!context) return;
+    context.sockets = context.sockets.filter(
+      (socket) => socket.id !== client.id,
+    );
     this.playerUpdate(client.roomId);
-    if (
-      this.roomContext[client.roomId].sockets.length <= 1 ||
-      this.roomContext[client.roomId].painter?.id === client.id
-    ) {
+    if (context.sockets.length <= 1 || context.painter?.id === client.id) {
       this.endGame(client.roomId);
       this.perfectlyClearGameData(client.roomId);
     }
 
-    console.log(
-      'disconnected!!!',
-      client.id,
-      this.roomContext[client.roomId].sockets,
-    );
+    console.log('disconnected!!!', client.id, context.sockets);
   }
 
   @SubscribeMessage(ClientEmitEvent.setNickname)
@@ -79,13 +74,17 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.roomId = roomId;
     client.nickname = nickname;
     client.broadcast.to(roomId).emit(ServerEmitEvent.newUser, { nickname });
-    this.roomContext[roomId].sockets.push({
+    client.join(roomId);
+
+    const context = this.loadContext(client);
+    context.sockets.push({
       id: client.id,
       nickname,
       points: 0,
     });
     this.playerUpdate(client.roomId);
-    if (this.roomContext[roomId].sockets.length >= 2) {
+    console.log('current player', roomId, context);
+    if (context.sockets.length >= 2) {
       this.startGame(client.roomId);
     }
     console.log('set new nickname!', nickname);
@@ -150,18 +149,19 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage(ClientEmitEvent.changeTimeoutRequest)
   handleChangeTimeout(client: Socket, { time }: { time: number }) {
-    if (!this.roomContext[client.roomId].changeTimeoutRequest) {
+    const context = this.loadContext(client);
+    if (!context.changeTimeoutRequest) {
       const timeoutId = setTimeout(() => {
         this.summarizeChangeTimeout(client.roomId);
       }, 30000);
-      this.roomContext[client.roomId].changeTimeoutRequest = {
-        currentClientCount: this.roomContext[client.roomId].sockets.length,
+      context.changeTimeoutRequest = {
+        currentClientCount: context.sockets.length,
         time,
         agree: new Set<string>(),
         disagree: new Set<string>(),
         timeoutId,
       };
-      this.roomContext[client.roomId].changeTimeoutRequest.agree.add(client.id);
+      context.changeTimeoutRequest.agree.add(client.id);
       client.broadcast
         .to(client.roomId)
         .emit(ServerEmitEvent.changeTimeoutRequested, { time });
@@ -170,10 +170,11 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage(ClientEmitEvent.changeTimeoutAgree)
   handleChangeTimeoutAgree(client: Socket) {
-    if (!this.roomContext[client.roomId].changeTimeoutRequest) return;
-    this.roomContext[client.roomId].changeTimeoutRequest.agree.add(client.id);
+    const context = this.loadContext(client);
+    if (!context.changeTimeoutRequest) return;
+    context.changeTimeoutRequest.agree.add(client.id);
     const { currentClientCount, agree, disagree } =
-      this.roomContext[client.roomId].changeTimeoutRequest;
+      context.changeTimeoutRequest;
     if (currentClientCount === agree.size + disagree.size) {
       this.summarizeChangeTimeout(client.roomId);
     }
@@ -181,31 +182,30 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage(ClientEmitEvent.changeTimeoutDisagree)
   handleChangeTimeoutDisagree(client: Socket) {
-    if (!this.roomContext[client.roomId].changeTimeoutRequest) return;
-    this.roomContext[client.roomId].changeTimeoutRequest.disagree.add(
-      client.id,
-    );
+    const context = this.loadContext(client);
+    if (!context.changeTimeoutRequest) return;
+    context.changeTimeoutRequest.disagree.add(client.id);
     const { currentClientCount, agree, disagree } =
-      this.roomContext[client.roomId].changeTimeoutRequest;
+      context.changeTimeoutRequest;
     if (currentClientCount === agree.size + disagree.size) {
       this.summarizeChangeTimeout(client.roomId);
     }
   }
 
   private summarizeChangeTimeout(roomId: string) {
-    if (!this.roomContext[roomId].changeTimeoutRequest) return;
-    const { agree, disagree, time, timeoutId } =
-      this.roomContext[roomId].changeTimeoutRequest;
+    const context = this.roomContext[roomId];
+    if (!context.changeTimeoutRequest) return;
+    const { agree, disagree, time, timeoutId } = context.changeTimeoutRequest;
     clearTimeout(timeoutId);
     if (agree.size >= disagree.size) {
-      this.roomContext[roomId].gameTimeout = time * 1000;
+      context.gameTimeout = time * 1000;
       this.server
         .to(roomId)
         .emit(ServerEmitEvent.changeTimeoutResolved, { time });
     } else {
       this.server.to(roomId).emit(ServerEmitEvent.changeTimeoutRejected);
     }
-    this.roomContext[roomId].changeTimeoutRequest = undefined;
+    context.changeTimeoutRequest = undefined;
   }
 
   private playerUpdate(roomId: string) {
@@ -229,26 +229,27 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     };
   }
 
+  private loadContext(socket: Socket) {
+    return this.roomContext[socket.roomId];
+  }
+
   private startGame(roomId: string) {
-    if (this.roomContext[roomId].inProgress) return;
-    if (this.roomContext[roomId].sockets.length <= 1) return;
+    const context = this.roomContext[roomId];
+    if (context.inProgress) return;
+    if (context.sockets.length <= 1) return;
 
-    this.roomContext[roomId].inProgress = true;
-    this.roomContext[roomId].painter =
-      this.roomContext[roomId].sockets[
-        Math.floor(Math.random() * this.roomContext[roomId].sockets.length)
-      ];
+    context.inProgress = true;
+    context.painter =
+      context.sockets[Math.floor(Math.random() * context.sockets.length)];
 
-    if (this.roomContext[roomId].wordHistory.size >= words.length) {
-      this.roomContext[roomId].wordHistory.clear();
+    if (context.wordHistory.size >= words.length) {
+      context.wordHistory.clear();
     }
 
     while (true) {
-      this.roomContext[roomId].word = randomWord();
-      if (
-        !this.roomContext[roomId].wordHistory.has(this.roomContext[roomId].word)
-      ) {
-        this.roomContext[roomId].wordHistory.add(this.roomContext[roomId].word);
+      context.word = randomWord();
+      if (!context.wordHistory.has(context.word)) {
+        context.wordHistory.add(context.word);
         break;
       }
     }
@@ -257,20 +258,18 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       start: Date.now(),
       end: Date.now() + START_WAIT_TIME,
     });
-    this.roomContext[roomId].startTimeoutId = setTimeout(() => {
+    context.startTimeoutId = setTimeout(() => {
       this.server.to(roomId).emit(ServerEmitEvent.gameStarted, {
-        id: this.roomContext[roomId].painter.id,
+        id: context.painter.id,
         start: Date.now(),
-        end: Date.now() + this.roomContext[roomId].gameTimeout,
+        end: Date.now() + context.gameTimeout,
       });
-      this.server
-        .to(this.roomContext[roomId].painter.id)
-        .emit(ServerEmitEvent.painterNotify, {
-          word: this.roomContext[roomId].word,
-        });
-      this.roomContext[roomId].endTimeoutId = setTimeout(
+      this.server.to(context.painter.id).emit(ServerEmitEvent.painterNotify, {
+        word: context.word,
+      });
+      context.endTimeoutId = setTimeout(
         () => this.endGame(roomId),
-        this.roomContext[roomId].gameTimeout,
+        context.gameTimeout,
       );
     }, START_WAIT_TIME);
     console.log('start game');
@@ -283,23 +282,23 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     roomId: string;
     winnerId: string;
   }) {
-    this.roomContext[roomId].winner = this.roomContext[roomId].sockets.find(
-      (socket) => socket.id === winnerId,
-    );
-    if (this.roomContext[roomId].winner) {
-      this.roomContext[roomId].winner.points += 10;
+    const context = this.roomContext[roomId];
+    context.winner = context.sockets.find((socket) => socket.id === winnerId);
+    if (context.winner) {
+      context.winner.points += 10;
     }
   }
 
   private endGame(roomId: string) {
-    this.roomContext[roomId].inProgress = false;
+    const context = this.roomContext[roomId];
+    context.inProgress = false;
     this.server.to(roomId).emit(ServerEmitEvent.gameEnded, {
-      winnerId: this.roomContext[roomId].winner?.id,
-      winnerNickname: this.roomContext[roomId].winner?.nickname,
-      word: this.roomContext[roomId].word,
+      winnerId: context.winner?.id,
+      winnerNickname: context.winner?.nickname,
+      word: context.word,
     });
-    clearTimeout(this.roomContext[roomId].startTimeoutId);
-    clearTimeout(this.roomContext[roomId].endTimeoutId);
+    clearTimeout(context.startTimeoutId);
+    clearTimeout(context.endTimeoutId);
     this.cleanGameData(roomId);
     console.log('gameEnded');
 
@@ -307,19 +306,25 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private cleanGameData(roomId: string) {
-    this.roomContext[roomId].word = undefined;
-    this.roomContext[roomId].painter = undefined;
-    this.roomContext[roomId].winner = undefined;
+    const context = this.roomContext[roomId];
+    context.word = undefined;
+    context.painter = undefined;
+    context.winner = undefined;
   }
 
   private perfectlyClearGameData(roomId: string) {
-    console.log('perfectClearGameData');
-    this.roomContext[roomId].wordHistory.clear();
-    this.roomContext[roomId].gameTimeout = END_WAIT_TIME;
-    if (this.roomContext[roomId].changeTimeoutRequest?.timeoutId) {
-      clearTimeout(this.roomContext[roomId].changeTimeoutRequest.timeoutId);
-    }
-    this.roomContext[roomId].changeTimeoutRequest = undefined;
     this.cleanGameData(roomId);
+    const context = this.roomContext[roomId];
+    console.log('perfectClearGameData');
+    context.wordHistory.clear();
+    context.gameTimeout = END_WAIT_TIME;
+    if (context.changeTimeoutRequest?.timeoutId) {
+      clearTimeout(context.changeTimeoutRequest.timeoutId);
+    }
+    context.changeTimeoutRequest = undefined;
+    if (context.sockets?.length === 0) {
+      this.roomContext[roomId] = undefined;
+      delete this.roomContext[roomId];
+    }
   }
 }

@@ -5,10 +5,12 @@ import { ClientEmitEvent, ServerEmitEvent } from "./SocketEvent";
 export default class Socket {
   private socket = io({ transports: ["websocket"] });
   public nickname: string;
+  public roomId: string;
 
-  constructor(nickname: string) {
+  constructor({ roomId, nickname }: { roomId: string; nickname: string }) {
+    this.roomId = roomId;
     this.nickname = nickname;
-    this.socket.emit(ClientEmitEvent.setNickname, { nickname });
+    this.socket.emit(ClientEmitEvent.setNickname, { roomId, nickname });
   }
 
   get id() {

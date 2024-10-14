@@ -13,7 +13,12 @@ export default function CenterLayout({
   return (
     <NextUIProvider navigate={navigate}>
       <div className="h-screen w-screen overflow-auto bg-slate-200">
-        <Toaster toastOptions={{ position: "bottom-right" }} />
+        <Toaster
+          toastOptions={{
+            position: "bottom-right",
+            style: { pointerEvents: "none" },
+          }}
+        />
         {children ?? <Outlet />}
       </div>
     </NextUIProvider>

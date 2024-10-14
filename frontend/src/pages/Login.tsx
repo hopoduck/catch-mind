@@ -6,7 +6,8 @@ import { useInput } from "../hooks/useInput";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { value, htmlAttribute } = useInput();
+  const { value: roomId, htmlAttribute: handleRoomId } = useInput();
+  const { value: nickname, htmlAttribute: handleNickname } = useInput();
   const handleKeydown: KeyboardEventHandler<HTMLInputElement> = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -14,12 +15,17 @@ export default function Login() {
     }
   };
   const handleSubmit = () => {
-    if (!value.trim()) {
+    if (!roomId.trim()) {
+      toast.error("방 제목을 입력해주세요.", { position: "top-center" });
+      return;
+    }
+    if (!nickname.trim()) {
       toast.error("닉네임을 입력해주세요.", { position: "top-center" });
       return;
     }
 
-    sessionStorage.setItem("nickname", value.trim());
+    sessionStorage.setItem("roomId", roomId.trim());
+    sessionStorage.setItem("nickname", nickname.trim());
     navigate("/");
   };
 
@@ -28,11 +34,14 @@ export default function Login() {
       <h1 className="text-xl font-bold">캐치마인드에 오신 것을 환영합니다!</h1>
 
       <div className="flex w-60 flex-col gap-4">
-        <Input
-          {...htmlAttribute}
-          placeholder="닉네임을 입력해주세요"
-          onKeyDown={handleKeydown}
-        />
+        <div className="flex w-60 flex-col gap-2">
+          <Input {...handleRoomId} placeholder="방 제목을 입력해주세요" />
+          <Input
+            {...handleNickname}
+            placeholder="닉네임을 입력해주세요"
+            onKeyDown={handleKeydown}
+          />
+        </div>
         <Button onClick={handleSubmit}>입장하기</Button>
       </div>
     </div>
