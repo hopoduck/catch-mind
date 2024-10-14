@@ -21,6 +21,7 @@ RUN pnpm build
 
 # 8. Nginx 이미지 사용
 FROM nginx:alpine AS frontend
+ENV TZ="Asia/Seoul"
 
 # 9. Nginx 설정 파일 복사 (필요 시)
 COPY nginx.conf /etc/nginx/nginx.conf
@@ -59,6 +60,7 @@ RUN pnpm build
 
 # 8. 실제 실행을 위한 최종 이미지 설정
 FROM node:20-slim AS backend
+ENV TZ="Asia/Seoul"
 
 WORKDIR /usr/src/app
 

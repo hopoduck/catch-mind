@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: dockerfile
       target: frontend
+    environment:
+      - TZ=Asia/Seoul
     ports:
       - "8080:80" # 프론트엔드가 Nginx를 통해 서빙되면 80번 포트를 3000번으로 매핑
 
@@ -12,5 +14,7 @@ services:
       context: .
       dockerfile: dockerfile
       target: backend
+    environment:
+      - TZ=Asia/Seoul
     ports:
       - "4000:4000" # 백엔드가 4000번 포트를 사용
