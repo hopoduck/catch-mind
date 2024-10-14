@@ -1,12 +1,17 @@
-import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import ReactGA from "react-ga4";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import "./index.css";
+
 import CenterLayout from "./layouts/CenterLayout.tsx";
 import Error404 from "./pages/Error404.tsx";
 import Home from "./pages/Home.tsx";
 import Login from "./pages/Login.tsx";
+
+import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+import "./index.css";
+
+ReactGA.initialize(import.meta.env.VITE_GA_ID);
 
 const router = createBrowserRouter([
   {
