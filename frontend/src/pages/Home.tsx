@@ -63,8 +63,9 @@ export default function Home() {
   };
 
   useEffect(() => {
+    const roomId = sessionStorage.getItem("roomId") ?? "Unknown";
     const nickname = sessionStorage.getItem("nickname") ?? "Anonymous";
-    const socket = new Socket(nickname);
+    const socket = new Socket({ roomId, nickname });
     setSocket(socket);
 
     return () => {
