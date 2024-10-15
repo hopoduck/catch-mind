@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
+import { MetricsModule } from './metrics/metrics.module';
+import { MetricsService } from './metrics/metrics.service';
 import { SocketGateway } from './socket/socket.gateway';
 
 @Module({
-  imports: [],
+  imports: [MetricsModule],
   controllers: [],
-  providers: [SocketGateway],
+  providers: [SocketGateway, MetricsService],
 })
 export class AppModule {}
