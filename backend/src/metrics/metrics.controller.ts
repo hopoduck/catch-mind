@@ -9,6 +9,7 @@ export class MetricsController {
   async getMetrics(@Req() req: Request, @Res() res: Response) {
     const ip = req.headers['x-real-ip'] ?? req.ip;
     if (!['::1', '127.0.0.1', 'localhost'].includes(ip.toString())) {
+      console.log(`you can not access metrics data. your ip : <${ip}>`);
       return res.status(HttpStatus.UNAUTHORIZED).end();
     }
 
