@@ -7,6 +7,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { END_WAIT_TIME, START_WAIT_TIME, words } from 'src/constants';
+import Metrics from 'src/metrics';
 import { randomWord } from 'src/util';
 import { CatchMindUser } from './socket';
 import { ClientEmitEvent, ServerEmitEvent } from './SocketEvent';
@@ -60,6 +61,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.endGame(client.roomId);
       this.perfectlyClearGameData(client.roomId);
     }
+    Metrics.connectedUserCount.dec();
 
     console.log('disconnected!!!', client.id, context.sockets);
   }
@@ -87,6 +89,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (context.sockets.length >= 2) {
       this.startGame(client.roomId);
     }
+    Metrics.sessionCount.inc();
+    Metrics.joinUserCount.inc();
     console.log('set new nickname!', nickname);
   }
 
@@ -104,6 +108,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.playerUpdate(client.roomId);
       this.endGame(client.roomId);
     }
+    Metrics.sendMessageCount.inc();
 
     console.log('new message!', message);
   }
@@ -227,6 +232,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       gameTimeout: END_WAIT_TIME,
       changeTimeoutRequest: undefined,
     };
+    Metrics.sessionCount.set(Object.values(this.roomContext).length);
   }
 
   private loadContext(socket: Socket) {
@@ -271,6 +277,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
         () => this.endGame(roomId),
         context.gameTimeout,
       );
+      Metrics.startGameCount.inc();
     }, START_WAIT_TIME);
     console.log('start game');
   }
@@ -286,6 +293,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     context.winner = context.sockets.find((socket) => socket.id === winnerId);
     if (context.winner) {
       context.winner.points += 10;
+      Metrics.winnerExistGameCount.inc();
     }
   }
 
@@ -326,5 +334,6 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.roomContext[roomId] = undefined;
       delete this.roomContext[roomId];
     }
+    Metrics.sessionCount.set(Object.values(this.roomContext).length);
   }
 }
