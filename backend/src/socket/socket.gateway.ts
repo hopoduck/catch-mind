@@ -45,6 +45,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleConnection(client: Socket) {
     client.nickname ??= 'Anonymous';
     console.log('connected!', client.id);
+    Metrics.connectedUserCount.inc();
   }
 
   handleDisconnect(client: Socket) {
@@ -89,7 +90,6 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (context.sockets.length >= 2) {
       this.startGame(client.roomId);
     }
-    Metrics.sessionCount.inc();
     Metrics.joinUserCount.inc();
     console.log('set new nickname!', nickname);
   }
