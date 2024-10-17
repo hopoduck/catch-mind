@@ -265,6 +265,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       end: Date.now() + START_WAIT_TIME,
     });
     context.startTimeoutId = setTimeout(() => {
+      if (!context.painter) {
+        this.endGame(roomId);
+        return;
+      }
       this.server.to(roomId).emit(ServerEmitEvent.gameStarted, {
         id: context.painter.id,
         start: Date.now(),
