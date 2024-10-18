@@ -32,3 +32,11 @@ export default class Metrics {
     labelNames: ['socket', 'message'],
   });
 }
+
+// 메트릭 초기 값 표기를 위해 설정
+Metrics.joinUserCount.inc(0);
+Metrics.connectedUserCount.inc(0);
+Metrics.sessionCount.inc(0);
+Metrics.startGameCount.inc(0);
+Metrics.winnerExistGameCount.inc(0);
+Metrics.sendMessageCount.inc(0);
