@@ -2,6 +2,7 @@ import { Button, Input } from "@nextui-org/react";
 import { KeyboardEventHandler } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import Changelog from "../components/Changelog";
 import { useInput } from "../hooks/useInput";
 
 export default function Login() {
@@ -44,6 +45,7 @@ export default function Login() {
         </div>
         <Button onClick={handleSubmit}>입장하기</Button>
       </div>
+      <Changelog />
     </div>
   );
 }
