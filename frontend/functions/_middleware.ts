@@ -13,10 +13,10 @@ export const onRequest: PagesFunction<EnvContext>[] = [
     const routes: Route[] = [
       {
         from: {
-          pattern: `${context.env.VITE_CLOUDFLARE_URL}/api/*`,
+          pattern: `${context.env.VITE_CLOUDFLARE_URL}/socket.io/*`,
           alsoMatchWWWSubdomain: true,
         },
-        to: { url: `${context.env.VITE_API_URL}/api` },
+        to: { url: `${context.env.VITE_API_URL}/socket.io` },
       },
     ];
 
