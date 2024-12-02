@@ -16,7 +16,9 @@ export const onRequest: PagesFunction<EnvContext>[] = [
           pattern: `${context.env.VITE_CLOUDFLARE_URL}/socket.io/*`,
           alsoMatchWWWSubdomain: true,
         },
-        to: { url: `${context.env.VITE_API_URL}/socket.io` },
+        to: {
+          url: `wss://${context.env.VITE_API_URL}/socket.io`,
+        },
       },
     ];
 
