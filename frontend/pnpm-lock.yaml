@@ -27,9 +27,15 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0(@types/react@18.3.7)(react@18.3.1)
     devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20241127.0
+        version: 4.20241127.0
       '@eslint/js':
         specifier: ^9.9.0
         version: 9.10.0
+      '@flaregun-net/proxyflare-for-pages':
+        specifier: ^0.1.0
+        version: 0.1.0(@cloudflare/workers-types@4.20241127.0)
       '@iconify-icon/react':
         specifier: ^2.1.0
         version: 2.1.0(react@18.3.1)
@@ -106,6 +112,9 @@ packages:
   '@babel/runtime@7.25.6':
     resolution: {integrity: sha512-VBj9MYyDb9tuLq7yzqjgzt6Q+IBQLrGZfdjOekyEirZPHxXWoTSGUTMrpsfi58Up73d13NfYLv8HT9vmznjzhQ==}
     engines: {node: '>=6.9.0'}
+
+  '@cloudflare/workers-types@4.20241127.0':
+    resolution: {integrity: sha512-UqlvtqV8eI0CdPR7nxlbVlE52+lcjHvGdbYXEPwisy23+39RsFV7OOy0da0moJAhqnL2OhDmWTOaKdsVcPHiJQ==}
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -274,6 +283,11 @@ packages:
   '@eslint/plugin-kit@0.1.0':
     resolution: {integrity: sha512-autAXT203ixhqei9xt+qkYOvY8l6LAFIdT2UXc/RPNeUVfqRF1BV94GTJyVPFKT8nFM6MyVJhjLj9E8JWvf5zQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@flaregun-net/proxyflare-for-pages@0.1.0':
+    resolution: {integrity: sha512-uVZ4s1GxpYJ+InnXLTczHqjrIUSWqxiHV2I6NQj4AVyV5ZozbMhuFXETpnk0IT5a4aRXew7rGMuYr4hzsu0T+g==}
+    peerDependencies:
+      '@cloudflare/workers-types': 3.14.0
 
   '@formatjs/ecma402-abstract@2.0.0':
     resolution: {integrity: sha512-rRqXOqdFmk7RYvj4khklyqzcfQl9vEL/usogncBHRZfZBDOwMGuSRNFl02fu5KGHXdbinju+YXyuR+Nk8xlr/g==}
@@ -3092,6 +3106,8 @@ snapshots:
     dependencies:
       regenerator-runtime: 0.14.1
 
+  '@cloudflare/workers-types@4.20241127.0': {}
+
   '@esbuild/aix-ppc64@0.21.5':
     optional: true
 
@@ -3197,6 +3213,10 @@ snapshots:
   '@eslint/plugin-kit@0.1.0':
     dependencies:
       levn: 0.4.1
+
+  '@flaregun-net/proxyflare-for-pages@0.1.0(@cloudflare/workers-types@4.20241127.0)':
+    dependencies:
+      '@cloudflare/workers-types': 4.20241127.0
 
   '@formatjs/ecma402-abstract@2.0.0':
     dependencies:
