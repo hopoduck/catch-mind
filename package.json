@@ -1,0 +1,15 @@
+{
+  "name": "catch-mind",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "pnpm run -r --parallel dev",
+    "build": "docker compose build",
+    "start": "docker compose up -d",
+    "up": "docker compose up -d --build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

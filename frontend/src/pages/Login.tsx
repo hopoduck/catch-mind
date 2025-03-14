@@ -1,21 +1,21 @@
 import { Button, Input } from "@nextui-org/react";
-import { KeyboardEventHandler } from "react";
+import { KeyboardEventHandler, useCallback, useEffect } from "react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Changelog from "../components/Changelog";
 import { useInput } from "../hooks/useInput";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { value: roomId, htmlAttribute: handleRoomId } = useInput();
-  const { value: nickname, htmlAttribute: handleNickname } = useInput();
-  const handleKeydown: KeyboardEventHandler<HTMLInputElement> = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-  const handleSubmit = () => {
+  const [params] = useSearchParams();
+  const { value: roomId, htmlAttribute: handleRoomId } = useInput(
+    params.get("roomId") ?? "",
+  );
+  const { value: nickname, htmlAttribute: handleNickname } = useInput(
+    params.get("nickname") ?? "",
+  );
+
+  const handleSubmit = useCallback(() => {
     if (!roomId.trim()) {
       toast.error("방 제목을 입력해주세요.", { position: "top-center" });
       return;
@@ -28,7 +28,20 @@ export default function Login() {
     sessionStorage.setItem("roomId", roomId.trim());
     sessionStorage.setItem("nickname", nickname.trim());
     navigate("/");
+  }, [navigate, nickname, roomId]);
+
+  const handleKeydown: KeyboardEventHandler<HTMLInputElement> = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSubmit();
+    }
   };
+
+  useEffect(() => {
+    if (params.has("roomId") && params.has("nickname")) {
+      handleSubmit();
+    }
+  }, [handleSubmit, params]);
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-8">
