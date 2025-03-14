@@ -1,8 +1,8 @@
-import { Badge, Button } from "@nextui-org/react";
+import { Badge, Button, Divider } from "@nextui-org/react";
 import { useState } from "react";
 
 // 업데이트 날짜의 unix epoch 값
-const lastChangelog = 1730100054815;
+const lastChangelog = 1741944040817;
 
 export default function Changelog() {
   const lastShowChangelog = isNaN(
@@ -25,6 +25,7 @@ export default function Changelog() {
           placement="top-right"
         >
           <Button
+            color="warning"
             onPress={() => {
               setShow((v) => !v);
               localStorage.setItem("lastShowChangelog", Date.now().toString());
@@ -36,6 +37,7 @@ export default function Changelog() {
         </Badge>
       ) : (
         <Button
+          color="warning"
           onPress={() => {
             setShow((v) => !v);
           }}
@@ -44,12 +46,17 @@ export default function Changelog() {
         </Button>
       )}
       {show ? (
-        <div className="m-4 w-full rounded bg-slate-300 p-4 shadow-lg">
+        <div className="m-4 w-full space-y-2 rounded bg-slate-300 p-4 shadow-lg">
+          <div className="text-lg">2025-03-14</div>
+          <li className="text-base">공유기능 추가</li>
+          <li className="ml-8 text-base">
+            쉽게 다른 사람들과 같이 게임을 즐겨보세요
+          </li>
+          <Divider className="!my-4" />
           <div className="text-lg">2024-10-28</div>
           <li className="text-base">
             문제 단어를 추가하였습니다. (1,319개 → 3,682개)
           </li>
-          {/* <Divider /> */}
         </div>
       ) : null}
     </div>

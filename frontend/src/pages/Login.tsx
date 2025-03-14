@@ -56,7 +56,9 @@ export default function Login() {
             onKeyDown={handleKeydown}
           />
         </div>
-        <Button onClick={handleSubmit}>입장하기</Button>
+        <Button color="primary" onClick={handleSubmit}>
+          입장하기
+        </Button>
       </div>
       <Changelog />
     </div>
