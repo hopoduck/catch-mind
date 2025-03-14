@@ -8,6 +8,7 @@ import Canvas from "../components/Canvas";
 import ChangeTimeout from "../components/ChangeTimeout";
 import ChatLog, { SystemChatEventType } from "../components/ChatLog";
 import LeaderBoard from "../components/LeaderBoard";
+import ShareGame from "../components/ShareGame";
 import Timer from "../components/Timer";
 import Toolbox from "../components/Toolbox";
 import { useInput } from "../hooks/useInput";
@@ -146,6 +147,9 @@ export default function Home() {
   return (
     <div className="flex flex-col justify-center gap-4 p-4">
       <div className="flex items-center justify-end gap-1">
+        <ShareGame
+          roomId={sessionStorage.getItem("roomId") ?? socket?.roomId ?? ""}
+        />
         <Button className="flex gap-1" color="secondary" onClick={formOpen}>
           <Icon icon="solar:clock-circle-bold" />
           시간 변경
