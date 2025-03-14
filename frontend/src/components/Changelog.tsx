@@ -2,7 +2,7 @@ import { Badge, Button, Divider } from "@nextui-org/react";
 import { useState } from "react";
 
 // 업데이트 날짜의 unix epoch 값
-const lastChangelog = 1741944040817;
+const lastChangelog = 1741963409156;
 
 export default function Changelog() {
   const lastShowChangelog = isNaN(
@@ -52,6 +52,7 @@ export default function Changelog() {
           <li className="ml-8 text-base">
             쉽게 다른 사람들과 같이 게임을 즐겨보세요
           </li>
+          <li className="text-base">모바일 대응 추가</li>
           <Divider className="!my-4" />
           <div className="text-lg">2024-10-28</div>
           <li className="text-base">
