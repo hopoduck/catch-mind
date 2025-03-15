@@ -203,7 +203,7 @@ export default function Canvas({
           "h-full max-h-full w-full max-w-full rounded-2xl border-2 border-sky-300 bg-white shadow max-xl:flex-col",
           { "cursor-default": readonly },
           { "cursor-none": !readonly && !isTouchDevice },
-          "touch-action-none", // 터치 동작 제어를 위한 클래스 추가
+          "touch-none", // 터치 동작 제어를 위한 클래스 추가
         ])}
         ref={canvasRef}
         // 마우스 이벤트 핸들러
