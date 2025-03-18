@@ -26,7 +26,7 @@ export default function Canvas({
   const { setCanvas, setIsDrawing, setCursorVisible } = useCanvasConfigStore();
   const isErase = action === Action.erase;
 
-  const getTouchPos = (e: React.TouchEvent<HTMLCanvasElement>) => {
+  const getTouchPos = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     if (e.touches.length === 0) {
       return { x: 0, y: 0 };
     }
@@ -41,7 +41,7 @@ export default function Canvas({
     const y = e.touches[0].clientY - rect.top;
 
     return { x, y };
-  };
+  }, []);
 
   const handleMouseDown: MouseEventHandler<HTMLElement> = (e) => {
     if (!canvas) return;
@@ -66,8 +66,6 @@ export default function Canvas({
   const handleTouchStart: TouchEventHandler<HTMLCanvasElement> = (e) => {
     if (!canvas) return;
     if (readonly) return;
-
-    e.preventDefault();
 
     const { x, y } = getTouchPos(e);
 
@@ -131,8 +129,6 @@ export default function Canvas({
     if (readonly) return;
     if (!isDrawing) return;
 
-    e.preventDefault();
-
     const { x, y } = getTouchPos(e);
 
     const color = isErase ? "#ffffff" : colorData.color;
@@ -147,6 +143,13 @@ export default function Canvas({
       }),
     );
   };
+
+  const handleContextMenu: MouseEventHandler<HTMLCanvasElement> = useCallback(
+    (e) => {
+      e.preventDefault();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -203,7 +206,7 @@ export default function Canvas({
           "h-full max-h-full w-full max-w-full rounded-2xl border-2 border-sky-300 bg-white shadow max-xl:flex-col",
           { "cursor-default": readonly },
           { "cursor-none": !readonly && !isTouchDevice },
-          "touch-none", // 터치 동작 제어를 위한 클래스 추가
+          "touch-none select-none", // 터치 동작 제어를 위한 클래스 추가
         ])}
         ref={canvasRef}
         // 마우스 이벤트 핸들러
@@ -221,6 +224,7 @@ export default function Canvas({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
+        onContextMenu={handleContextMenu}
       />
     </div>
   );
