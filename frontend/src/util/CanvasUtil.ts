@@ -1,6 +1,6 @@
 export default class CanvasUtil {
-  private canvas: HTMLCanvasElement;
-  private context: CanvasRenderingContext2D;
+  private readonly canvas: HTMLCanvasElement;
+  private readonly context: CanvasRenderingContext2D;
 
   private static readonly SIZE = 700;
 

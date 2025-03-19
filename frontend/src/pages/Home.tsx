@@ -179,12 +179,12 @@ export default function Home() {
       <div className="flex items-center justify-center gap-1">
         <div>{message}</div>
       </div>
-      <div className="flex flex-row items-center justify-center gap-4 max-[700px]:flex-col">
-        <div className="flex flex-col gap-4">
+      <div className="flex flex-row items-center justify-center gap-4 max-[1100px]:flex-col">
+        <div className="flex flex-shrink-0 flex-col gap-4">
           {duration !== undefined && <Timer duration={duration} />}
           {socket && <Canvas socket={socket} readonly={!isPainter} />}
         </div>
-        <div className="flex w-full max-w-[700px] flex-col items-center gap-4 max-[700px]:h-full">
+        <div className="flex w-full max-w-[700px] flex-col items-center gap-4 max-[1100px]:h-full">
           {socket && <Toolbox socket={socket} readonly={!isPainter} />}
           <LeaderBoard
             players={players}
